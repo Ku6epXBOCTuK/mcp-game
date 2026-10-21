@@ -51,14 +51,12 @@ export const recipeSchema = z.object({
     item: itemIdSchema,
     qty: z.number().positive(),
   }),
-  inputs: z
-    .array(
-      z.object({
-        item: itemIdSchema,
-        qty: z.number().positive(),
-      }),
-    )
-    .min(1),
+  inputs: z.array(
+    z.object({
+      item: itemIdSchema,
+      qty: z.number().positive(),
+    }),
+  ),
   skill: skillIdSchema,
   skillLevel: z.number().int().min(1),
   timeSec: z.number().positive(),

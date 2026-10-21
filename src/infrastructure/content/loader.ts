@@ -118,7 +118,7 @@ export class FileContentRepository implements ContentRepository {
       );
     }
     try {
-      return ok(JSON.parse(text) as unknown);
+      return ok(JSON.parse(text.replace(/^\uFEFF/, "")) as unknown);
     } catch (cause) {
       const detail = cause instanceof Error ? cause.message : String(cause);
       return err(

@@ -8,6 +8,8 @@
   { "id": "copper_ore", "name": "Медная руда", "type": "resource", "sellPrice": 5, "buyPrice": 10, "description": "Сырьё для кузни." },
   { "id": "coal", "name": "Уголь", "type": "resource", "sellPrice": 5, "buyPrice": 10, "description": "Топливо плавильни." },
   { "id": "gold_ore", "name": "Золотая руда", "type": "resource", "sellPrice": 14, "buyPrice": 28, "description": "Редкая жила." },
+  { "id": "silver_ore", "name": "Серебряная руда", "type": "resource", "sellPrice": 10, "buyPrice": 20, "description": "Редкая жила." },
+  { "id": "milk", "name": "Молоко", "type": "resource", "sellPrice": 4, "buyPrice": 8, "description": "Свежее молоко." },
   { "id": "meat", "name": "Мясо", "type": "resource", "sellPrice": 4, "buyPrice": 8, "description": "Свежее мясо." },
   { "id": "roasted_meat", "name": "Жареное мясо", "type": "food", "sellPrice": 12, "buyPrice": 24, "description": "Сытное блюдо, восстанавливает стамину." },
   { "id": "pelt", "name": "Шкура", "type": "resource", "sellPrice": 6, "buyPrice": 12, "description": "Необработанная шкура." },

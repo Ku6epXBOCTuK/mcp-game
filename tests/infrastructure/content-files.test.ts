@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { SKILL_IDS } from "../../src/domain/game/types.ts";
-import { itemsFileSchema, skillsFileSchema } from "../../src/infrastructure/content/schemas.ts";
+import { itemsFileSchema, recipesFileSchema, skillsFileSchema } from "../../src/infrastructure/content/schemas.ts";
 
 const contentDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -46,6 +46,27 @@ test("items.json keeps prices sane", async () => {
       assert.equal(item.buyPrice, 0, `${item.id} квестовый предмет должен быть нерабочим`);
     }
   }
+});
+
+test("recipes.json covers every skill and only references known items", async () => {
+  const recipes = recipesFileSchema.parse(await readContent("recipes.json"));
+  const items = itemsFileSchema.parse(await readContent("items.json"));
+  const itemIds = new Set(items.map((item) => item.id));
+  const skills = new Set(recipes.map((recipe) => recipe.skill));
+  assert.deepEqual(
+    [...skills].sort(),
+    ["chopping", "cooking", "crafting", "hunting", "magic", "mining"].sort(),
+  );
+  for (const recipe of recipes) {
+    assert.ok(itemIds.has(recipe.output.item), `${recipe.id} -> ${recipe.output.item}`);
+    for (const input of recipe.inputs) {
+      assert.ok(itemIds.has(input.item), `${recipe.id} <- ${input.item}`);
+    }
+    assert.ok(recipe.skillLevel >= 1);
+    assert.ok(recipe.timeSec > 0);
+  }
+  assert.equal(new Set(recipes.map((r) => r.id)).size, recipes.length);
+  assert.ok(recipes.length >= 40);
 });
 
 test("skills.json uses the shared xp curve and sane unlock levels", async () => {

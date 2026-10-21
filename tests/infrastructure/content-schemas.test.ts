@@ -35,7 +35,7 @@ test("item rejects unknown type and negative price", () => {
   );
 });
 
-test("recipe requires at least one input and positive time", () => {
+test("recipe accepts empty inputs (gathering) and rejects bad time", () => {
   const base = {
     id: "plank",
     output: { item: "plank", qty: 1 },
@@ -43,8 +43,12 @@ test("recipe requires at least one input and positive time", () => {
     skillLevel: 1,
     timeSec: 3,
   };
-  assert.equal(recipeSchema.safeParse({ ...base, inputs: [] }).success, false);
+  assert.equal(recipeSchema.safeParse({ ...base, inputs: [] }).success, true);
   assert.equal(recipeSchema.safeParse({ ...base, timeSec: 0, inputs: [{ item: "wood", qty: 1 }] }).success, false);
+  assert.equal(
+    recipeSchema.safeParse({ ...base, inputs: [{ item: "wood", qty: 0 }] }).success,
+    false,
+  );
   assert.equal(
     recipeSchema.safeParse({ ...base, inputs: [{ item: "wood", qty: 1 }] }).success,
     true,
