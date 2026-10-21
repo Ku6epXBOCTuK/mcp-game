@@ -78,6 +78,13 @@ export class SqliteApiKeyRepository implements ApiKeyRepository {
     return row ? toRecord(row) : null;
   }
 
+  async findById(id: string): Promise<ApiKeyRecord | null> {
+    const row = this.db.prepare("SELECT * FROM api_keys WHERE id = ?").get(id) as
+      | ApiKeyRow
+      | undefined;
+    return row ? toRecord(row) : null;
+  }
+
   async listByPlayer(playerId: string): Promise<ApiKeyRecord[]> {
     const rows = this.db
       .prepare("SELECT * FROM api_keys WHERE player_id = ? ORDER BY created_at ASC")

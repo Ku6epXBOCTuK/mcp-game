@@ -20,6 +20,7 @@ export interface ApiKeyRepository {
     scopes: string[];
   }): Promise<ApiKeyRecord>;
   findByHash(keyHash: string): Promise<ApiKeyRecord | null>;
+  findById(id: string): Promise<ApiKeyRecord | null>;
   listByPlayer(playerId: string): Promise<ApiKeyRecord[]>;
   revoke(id: string, at: number): Promise<void>;
   touchLastUsed(id: string, at: number): Promise<void>;
