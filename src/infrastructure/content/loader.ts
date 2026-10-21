@@ -134,6 +134,7 @@ export class FileContentRepository implements ContentRepository {
     const questIds = new Set(content.quests.map((quest) => quest.id));
     const upgradeIds = new Set(content.upgrades.map((upgrade) => upgrade.id));
     const zoneIds = new Set(content.zones.map((zone) => zone.id));
+    const skillIds = new Set<string>(content.skills.map((skill) => skill.id));
 
     for (const recipe of content.recipes) {
       if (!itemIds.has(recipe.output.item)) {
@@ -244,6 +245,30 @@ export class FileContentRepository implements ContentRepository {
             ),
           );
         }
+      }
+    }
+
+    for (const skillId of Object.keys(content.balance.rateBase)) {
+      if (!skillIds.has(skillId)) {
+        return err(
+          contentInvalidError(
+            "content/balance.json",
+            "rateBase",
+            `неизвестный скилл "${skillId}"`,
+          ),
+        );
+      }
+    }
+
+    for (const upgradeId of Object.keys(content.balance.costGrowth)) {
+      if (!upgradeIds.has(upgradeId)) {
+        return err(
+          contentInvalidError(
+            "content/balance.json",
+            "costGrowth",
+            `неизвестный апгрейд "${upgradeId}"`,
+          ),
+        );
       }
     }
 

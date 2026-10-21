@@ -5,6 +5,13 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { SKILL_IDS } from "../../src/domain/game/types.ts";
 import {
+  DEFAULT_SKILL_RATE_K,
+  MARKET_DRIFT_RANGE,
+  MAX_TRADING_DISCOUNT,
+  TRADING_DISCOUNT_PER_LEVEL,
+} from "../../src/domain/shared/curves.ts";
+import {
+  balanceSchema,
   eventsFileSchema,
   itemsFileSchema,
   monstersFileSchema,
@@ -199,6 +206,35 @@ test("events.json has 6 timed events with sane modifiers", async () => {
         assert.ok(modifier.value > 0, event.id);
       }
     }
+  }
+});
+
+test("balance.json matches the domain curve defaults and covers all skills", async () => {
+  const balance = balanceSchema.parse(await readContent("balance.json"));
+  const skills = skillsFileSchema.parse(await readContent("skills.json"));
+  const upgrades = upgradesFileSchema.parse(await readContent("upgrades.json"));
+
+  assert.equal(balance.skillRateK, DEFAULT_SKILL_RATE_K);
+  assert.equal(balance.xpBase, 15);
+  assert.equal(balance.xpExponent, 1.4);
+  assert.equal(balance.tradingDiscountPerLevel, TRADING_DISCOUNT_PER_LEVEL);
+  assert.equal(balance.tradingDiscountMax, MAX_TRADING_DISCOUNT);
+  assert.equal(balance.marketDriftRange, MARKET_DRIFT_RANGE);
+  assert.equal(balance.marketDriftIntervalSec, 300);
+  assert.equal(balance.maxTickSec, 3600);
+  assert.equal(balance.maxTickPerDaySec, 86400);
+  assert.equal(balance.offlineCapSec, 43200);
+
+  assert.deepEqual(
+    Object.keys(balance.rateBase).sort(),
+    skills.map((skill) => skill.id).sort(),
+  );
+  assert.deepEqual(
+    Object.keys(balance.costGrowth).sort(),
+    upgrades.map((upgrade) => upgrade.id).sort(),
+  );
+  for (const upgrade of upgrades) {
+    assert.equal(balance.costGrowth[upgrade.id], upgrade.costGrowth);
   }
 });
 

@@ -1,0 +1,36 @@
+{
+  "skillRateK": 0.1,
+  "xpBase": 15,
+  "xpExponent": 1.4,
+  "tradingDiscountPerLevel": 0.02,
+  "tradingDiscountMax": 0.4,
+  "marketDriftRange": 0.3,
+  "marketDriftIntervalSec": 300,
+  "maxTickSec": 3600,
+  "maxTickPerDaySec": 86400,
+  "offlineCapSec": 43200,
+  "rateBase": {
+    "chopping": 1,
+    "mining": 0.9,
+    "hunting": 0.8,
+    "crafting": 0.6,
+    "cooking": 0.5,
+    "trading": 0.4,
+    "combat": 0.7,
+    "magic": 0.3
+  },
+  "costGrowth": {
+    "axe": 1.15,
+    "pickaxe": 1.15,
+    "forge": 1.25,
+    "campfire": 1.2,
+    "logging_camp": 1.25,
+    "quarry": 1.25,
+    "farm": 1.25,
+    "alchemy_lab": 1.3,
+    "bank": 1.35,
+    "auction": 1.35,
+    "teleport": 1.5,
+    "tent": 1.2
+  }
+}
