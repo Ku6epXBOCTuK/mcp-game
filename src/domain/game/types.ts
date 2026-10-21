@@ -66,10 +66,9 @@ export type QuestState = {
 
 export type QuestsState = Record<QuestId, QuestState>;
 
-export type RngState = {
-  seed: number;
-  counter: number;
-};
+import type { RngState } from "../shared/rng.ts";
+
+export type { RngState };
 
 export type GameState = {
   version: number;
