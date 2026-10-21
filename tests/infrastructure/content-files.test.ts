@@ -6,9 +6,11 @@ import { dirname, join } from "node:path";
 import { SKILL_IDS } from "../../src/domain/game/types.ts";
 import {
   itemsFileSchema,
+  monstersFileSchema,
   recipesFileSchema,
   skillsFileSchema,
   upgradesFileSchema,
+  zonesFileSchema,
 } from "../../src/infrastructure/content/schemas.ts";
 
 const contentDir = join(
@@ -96,6 +98,44 @@ test("upgrades.json defines the planned building set with sane curves", async ()
     [...kinds].sort(),
     ["passiveIncome", "productionMultiplier", "unlock", "xpMultiplier"],
   );
+});
+
+test("zones.json defines 8 zones with monsters from monsters.json", async () => {
+  const zones = zonesFileSchema.parse(await readContent("zones.json"));
+  const monsters = monstersFileSchema.parse(await readContent("monsters.json"));
+  const monsterIds = new Set(monsters.map((monster) => monster.id));
+  assert.equal(zones.length, 8);
+  assert.equal(new Set(zones.map((zone) => zone.id)).size, zones.length);
+  for (const zone of zones) {
+    assert.ok(zone.monsters.length > 0);
+    for (const monsterId of zone.monsters) {
+      assert.ok(monsterIds.has(monsterId), `${zone.id} -> ${monsterId}`);
+    }
+    if (zone.unlock.kind === "skillLevel") {
+      assert.ok(zone.unlock.level >= 1);
+    }
+    if (zone.unlock.kind === "quest") {
+      assert.ok(zone.unlock.quest.length > 0);
+    }
+  }
+});
+
+test("monsters.json has sane combat stats and only known drops", async () => {
+  const monsters = monstersFileSchema.parse(await readContent("monsters.json"));
+  const items = itemsFileSchema.parse(await readContent("items.json"));
+  const itemIds = new Set(items.map((item) => item.id));
+  assert.equal(new Set(monsters.map((monster) => monster.id)).size, monsters.length);
+  for (const monster of monsters) {
+    assert.ok(monster.hp > 0);
+    assert.ok(monster.damage > 0);
+    assert.ok(monster.attackInterval > 0);
+    assert.ok(monster.xp > 0);
+    assert.ok(monster.dropTable.length > 0);
+    for (const drop of monster.dropTable) {
+      assert.ok(itemIds.has(drop.item), `${monster.id} -> ${drop.item}`);
+      assert.ok(drop.chance > 0 && drop.chance <= 1);
+    }
+  }
 });
 
 test("skills.json uses the shared xp curve and sane unlock levels", async () => {

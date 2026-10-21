@@ -20,6 +20,7 @@
   { "id": "feather", "name": "Перо", "type": "resource", "sellPrice": 2, "buyPrice": 4, "description": "Пёрышко для стрел." },
   { "id": "grass_fiber", "name": "Травяное волокно", "type": "resource", "sellPrice": 1, "buyPrice": 2, "description": "Прочные волокна травы." },
   { "id": "herb", "name": "Трава", "type": "resource", "sellPrice": 4, "buyPrice": 8, "description": "Лечебная трава." },
+  { "id": "coin_pouch", "name": "Кошель", "type": "resource", "sellPrice": 25, "buyPrice": 50, "description": "Мешок с монетами разбойника." },
   { "id": "mushroom", "name": "Гриб", "type": "resource", "sellPrice": 3, "buyPrice": 6, "description": "Лесной гриб." },
   { "id": "berry", "name": "Ягоды", "type": "resource", "sellPrice": 2, "buyPrice": 4, "description": "Сладкие лесные ягоды." },
   { "id": "flour", "name": "Мука", "type": "material", "sellPrice": 5, "buyPrice": 10, "description": "Помолотые зёрна." },

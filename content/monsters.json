@@ -1,0 +1,210 @@
+[
+  {
+    "id": "rabbit",
+    "name": "Заяц",
+    "zone": "meadow",
+    "hp": 8,
+    "damage": 1,
+    "attackInterval": 2,
+    "xp": 4,
+    "dropTable": [
+      { "item": "meat", "chance": 0.6, "qty": 1 },
+      { "item": "hide", "chance": 0.3, "qty": 1 }
+    ]
+  },
+  {
+    "id": "wolf",
+    "name": "Волк",
+    "zone": "meadow",
+    "hp": 18,
+    "damage": 3,
+    "attackInterval": 2,
+    "xp": 9,
+    "dropTable": [
+      { "item": "pelt", "chance": 0.7, "qty": 1 },
+      { "item": "meat", "chance": 0.5, "qty": 2 },
+      { "item": "bone", "chance": 0.3, "qty": 1 }
+    ]
+  },
+  {
+    "id": "boar",
+    "name": "Кабан",
+    "zone": "forest",
+    "hp": 30,
+    "damage": 5,
+    "attackInterval": 2.2,
+    "xp": 15,
+    "dropTable": [
+      { "item": "meat", "chance": 0.9, "qty": 3 },
+      { "item": "hide", "chance": 0.5, "qty": 1 },
+      { "item": "fat", "chance": 0.4, "qty": 1 }
+    ]
+  },
+  {
+    "id": "rock_lizard",
+    "name": "Каменная ящерица",
+    "zone": "quarry",
+    "hp": 45,
+    "damage": 7,
+    "attackInterval": 2.4,
+    "xp": 22,
+    "dropTable": [
+      { "item": "stone", "chance": 0.9, "qty": 3 },
+      { "item": "iron_ore", "chance": 0.25, "qty": 1 }
+    ]
+  },
+  {
+    "id": "cave_rat",
+    "name": "Пещерная крыса",
+    "zone": "quarry",
+    "hp": 38,
+    "damage": 6,
+    "attackInterval": 1.8,
+    "xp": 18,
+    "dropTable": [
+      { "item": "meat", "chance": 0.5, "qty": 1 },
+      { "item": "coal", "chance": 0.35, "qty": 1 },
+      { "item": "hide", "chance": 0.25, "qty": 1 }
+    ]
+  },
+  {
+    "id": "swamp_ooze",
+    "name": "Болотная слизь",
+    "zone": "swamp",
+    "hp": 70,
+    "damage": 10,
+    "attackInterval": 2.5,
+    "xp": 34,
+    "dropTable": [
+      { "item": "mushroom", "chance": 0.6, "qty": 2 },
+      { "item": "herb", "chance": 0.4, "qty": 1 },
+      { "item": "venom", "chance": 0.15, "qty": 1 }
+    ]
+  },
+  {
+    "id": "bog_lurker",
+    "name": "Болотный хищник",
+    "zone": "swamp",
+    "hp": 95,
+    "damage": 13,
+    "attackInterval": 2.6,
+    "xp": 45,
+    "dropTable": [
+      { "item": "hide", "chance": 0.6, "qty": 2 },
+      { "item": "claw", "chance": 0.35, "qty": 1 },
+      { "item": "venom", "chance": 0.2, "qty": 1 }
+    ]
+  },
+  {
+    "id": "bandit",
+    "name": "Разбойник",
+    "zone": "hills",
+    "hp": 110,
+    "damage": 16,
+    "attackInterval": 2,
+    "xp": 55,
+    "dropTable": [
+      { "item": "iron_ingot", "chance": 0.4, "qty": 1 },
+      { "item": "potion_health", "chance": 0.2, "qty": 1 },
+      { "item": "coin_pouch", "chance": 0.25, "qty": 1 }
+    ]
+  },
+  {
+    "id": "hill_troll",
+    "name": "Холмовой тролль",
+    "zone": "hills",
+    "hp": 160,
+    "damage": 22,
+    "attackInterval": 3,
+    "xp": 80,
+    "dropTable": [
+      { "item": "meat", "chance": 0.8, "qty": 4 },
+      { "item": "bone", "chance": 0.5, "qty": 2 },
+      { "item": "steel_ingot", "chance": 0.15, "qty": 1 }
+    ]
+  },
+  {
+    "id": "cave_spider",
+    "name": "Пещерный паук",
+    "zone": "cave",
+    "hp": 150,
+    "damage": 20,
+    "attackInterval": 1.9,
+    "xp": 75,
+    "dropTable": [
+      { "item": "string", "chance": 0.7, "qty": 2 },
+      { "item": "venom", "chance": 0.3, "qty": 1 },
+      { "item": "silk", "chance": 0.12, "qty": 1 }
+    ]
+  },
+  {
+    "id": "crystal_golem",
+    "name": "Хрустальный голем",
+    "zone": "cave",
+    "hp": 240,
+    "damage": 28,
+    "attackInterval": 3.2,
+    "xp": 120,
+    "dropTable": [
+      { "item": "crystal_shard", "chance": 0.5, "qty": 1 },
+      { "item": "glass", "chance": 0.6, "qty": 2 },
+      { "item": "gold_ingot", "chance": 0.2, "qty": 1 }
+    ]
+  },
+  {
+    "id": "ruin_guardian",
+    "name": "Хранитель руин",
+    "zone": "ruins",
+    "hp": 320,
+    "damage": 34,
+    "attackInterval": 2.8,
+    "xp": 160,
+    "dropTable": [
+      { "item": "ancient_seal", "chance": 0.35, "qty": 1 },
+      { "item": "gold_ingot", "chance": 0.5, "qty": 1 },
+      { "item": "rune", "chance": 0.3, "qty": 1 }
+    ]
+  },
+  {
+    "id": "shadow",
+    "name": "Тень",
+    "zone": "ruins",
+    "hp": 400,
+    "damage": 40,
+    "attackInterval": 2.4,
+    "xp": 200,
+    "dropTable": [
+      { "item": "scroll", "chance": 0.35, "qty": 1 },
+      { "item": "elixir", "chance": 0.15, "qty": 1 },
+      { "item": "silver_ore", "chance": 0.5, "qty": 2 }
+    ]
+  },
+  {
+    "id": "drake",
+    "name": "Дрейк",
+    "zone": "dragon_lair",
+    "hp": 520,
+    "damage": 48,
+    "attackInterval": 2.6,
+    "xp": 260,
+    "dropTable": [
+      { "item": "dragon_scale", "chance": 0.4, "qty": 1 },
+      { "item": "steel_ingot", "chance": 0.5, "qty": 2 },
+      { "item": "potion_strength", "chance": 0.25, "qty": 1 }
+    ]
+  },
+  {
+    "id": "dragon",
+    "name": "Дракон",
+    "zone": "dragon_lair",
+    "hp": 900,
+    "damage": 70,
+    "attackInterval": 3.4,
+    "xp": 500,
+    "dropTable": [
+      { "item": "dragon_scale", "chance": 0.9, "qty": 2 },
+      { "item": "gold_ingot", "chance": 0.8, "qty": 3 },
+      { "item": "elixir", "chance": 0.4, "qty": 1 }
+    ]
+  }
+]
