@@ -120,6 +120,12 @@ export type BalanceContent = {
   offlineCapSec: number;
   rateBase: Record<string, number>;
   costGrowth: Record<string, number>;
+  prestigeProductionExponent: number;
+  prestigeGoldExponent: number;
+  eventChancePerMinute: number;
+  playerMaxHp: number;
+  playerDamageBase: number;
+  playerDamagePerLevel: number;
 };
 
 export type GameContent = {

@@ -90,6 +90,12 @@ const VALID = {
     offlineCapSec: 43200,
     rateBase: { chopping: 1 },
     costGrowth: { axe: 1.15 },
+    prestigeProductionExponent: 0.15,
+    prestigeGoldExponent: 0.2,
+    eventChancePerMinute: 0.02,
+    playerMaxHp: 100,
+    playerDamageBase: 1,
+    playerDamagePerLevel: 0.5,
   },
 } as const;
 
@@ -228,6 +234,144 @@ test("quest unlock pointing to a missing quest is rejected", async () => {
   if (result.isErr()) {
     assert.equal(expectContentError(result.error).id, "forest");
     assert.match(expectContentError(result.error).detail, /q_missing/);
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("unknown drop item in a monster is rejected", async () => {
+  const dir = await makeContentDir({
+    "monsters.json": [
+      {
+        id: "wolf",
+        name: "Волк",
+        zone: "forest",
+        hp: 10,
+        damage: 2,
+        attackInterval: 1.5,
+        xp: 5,
+        dropTable: [{ item: "gold_ore", chance: 0.5, qty: 1 }],
+      },
+    ],
+  });
+  const repo = new FileContentRepository(dir);
+  const result = await repo.load();
+  assert.equal(result.isErr(), true);
+  if (result.isErr()) {
+    assert.equal(expectContentError(result.error).id, "wolf");
+    assert.match(expectContentError(result.error).detail, /gold_ore/);
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("unknown zone of a monster is rejected", async () => {
+  const dir = await makeContentDir({
+    "monsters.json": [
+      {
+        id: "wolf",
+        name: "Волк",
+        zone: "void",
+        hp: 10,
+        damage: 2,
+        attackInterval: 1.5,
+        xp: 5,
+        dropTable: [{ item: "wood", chance: 0.5, qty: 1 }],
+      },
+    ],
+  });
+  const repo = new FileContentRepository(dir);
+  const result = await repo.load();
+  assert.equal(result.isErr(), true);
+  if (result.isErr()) {
+    assert.equal(expectContentError(result.error).id, "wolf");
+    assert.match(expectContentError(result.error).detail, /void/);
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("unknown quest reward item is rejected", async () => {
+  const dir = await makeContentDir({
+    "quests.json": [
+      {
+        id: "q1",
+        name: "Первое дерево",
+        steps: [{ kind: "collect", target: "wood", qty: 10 }],
+        rewards: [{ kind: "item", id: "magic_wand", qty: 1 }],
+      },
+    ],
+  });
+  const repo = new FileContentRepository(dir);
+  const result = await repo.load();
+  assert.equal(result.isErr(), true);
+  if (result.isErr()) {
+    assert.equal(expectContentError(result.error).id, "q1");
+    assert.match(expectContentError(result.error).detail, /magic_wand/);
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("unknown quest step recipe is rejected", async () => {
+  const dir = await makeContentDir({
+    "quests.json": [
+      {
+        id: "q1",
+        name: "Первое дерево",
+        steps: [{ kind: "craft", target: "make_bow", qty: 1 }],
+        rewards: [{ kind: "gold", id: "gold", qty: 50 }],
+      },
+    ],
+  });
+  const repo = new FileContentRepository(dir);
+  const result = await repo.load();
+  assert.equal(result.isErr(), true);
+  if (result.isErr()) {
+    assert.equal(expectContentError(result.error).id, "q1");
+    assert.match(expectContentError(result.error).detail, /make_bow/);
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("unknown skill in balance.rateBase is rejected", async () => {
+  const dir = await makeContentDir({
+    "balance.json": {
+      ...VALID["balance.json"],
+      rateBase: { chopping: 1, sailing: 0.5 },
+    },
+  });
+  const repo = new FileContentRepository(dir);
+  const result = await repo.load();
+  assert.equal(result.isErr(), true);
+  if (result.isErr()) {
+    assert.equal(expectContentError(result.error).id, "rateBase");
+    assert.match(expectContentError(result.error).detail, /sailing/);
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("unknown upgrade in balance.costGrowth is rejected", async () => {
+  const dir = await makeContentDir({
+    "balance.json": {
+      ...VALID["balance.json"],
+      costGrowth: { axe: 1.15, moon_tower: 1.4 },
+    },
+  });
+  const repo = new FileContentRepository(dir);
+  const result = await repo.load();
+  assert.equal(result.isErr(), true);
+  if (result.isErr()) {
+    assert.equal(expectContentError(result.error).id, "costGrowth");
+    assert.match(expectContentError(result.error).detail, /moon_tower/);
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("content files with a BOM are parsed", async () => {
+  const dir = await makeContentDir();
+  await writeFile(join(dir, "items.json"), `\uFEFF${JSON.stringify(VALID["items.json"])}`, "utf8");
+  const repo = new FileContentRepository(dir);
+  const result = await repo.load();
+  assert.equal(result.isOk(), true);
+  if (result.isOk()) {
+    assert.equal(result.value.items.length, 2);
   }
   await rm(dir, { recursive: true, force: true });
 });

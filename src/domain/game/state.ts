@@ -10,7 +10,7 @@ import {
   type UpgradeLevels,
 } from "./types.ts";
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 export function createInitialState(
   playerId: PlayerId,
@@ -27,6 +27,8 @@ export function createInitialState(
     inventory: {},
     skills: createSkills(),
     activeAction: null,
+    activeEvents: [],
+    health: { hp: 100, maxHp: 100 },
     upgrades: {},
     prestige: { points: 0, layers: 0, runs: 0, multipliers: {} },
     quests: {},

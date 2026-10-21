@@ -32,5 +32,11 @@
     "auction": 1.35,
     "teleport": 1.5,
     "tent": 1.2
-  }
+  },
+  "prestigeProductionExponent": 0.15,
+  "prestigeGoldExponent": 0.2,
+  "eventChancePerMinute": 0.02,
+  "playerMaxHp": 100,
+  "playerDamageBase": 1,
+  "playerDamagePerLevel": 0.5
 }

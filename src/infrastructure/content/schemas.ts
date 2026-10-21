@@ -178,6 +178,12 @@ export const balanceSchema = z.object({
   offlineCapSec: z.number().int().min(1),
   rateBase: z.record(z.string(), z.number().positive()),
   costGrowth: z.record(z.string(), z.number().min(1)),
+  prestigeProductionExponent: z.number().min(0),
+  prestigeGoldExponent: z.number().min(0),
+  eventChancePerMinute: z.number().min(0),
+  playerMaxHp: z.number().int().positive(),
+  playerDamageBase: z.number().min(0),
+  playerDamagePerLevel: z.number().min(0),
 }) satisfies z.ZodType<BalanceContent>;
 
 export const skillsFileSchema = z.array(skillSchema);

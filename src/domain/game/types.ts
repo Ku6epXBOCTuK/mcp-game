@@ -70,6 +70,17 @@ import type { RngState } from "../shared/rng.ts";
 
 export type { RngState };
 
+export type ActiveEvent = {
+  id: EventId;
+  startedAt: number;
+  endsAt: number;
+};
+
+export type Health = {
+  hp: number;
+  maxHp: number;
+};
+
 export type GameState = {
   version: number;
   playerId: PlayerId;
@@ -80,6 +91,8 @@ export type GameState = {
   inventory: Inventory;
   skills: Record<SkillId, SkillState>;
   activeAction: ActiveAction | null;
+  activeEvents: ActiveEvent[];
+  health: Health;
   upgrades: UpgradeLevels;
   prestige: PrestigeState;
   quests: QuestsState;

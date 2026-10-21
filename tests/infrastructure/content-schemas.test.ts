@@ -165,9 +165,16 @@ test("balance requires the tuning knobs used by domain curves", () => {
     offlineCapSec: 43200,
     rateBase: { chopping: 1 },
     costGrowth: { axe: 1.15 },
+    prestigeProductionExponent: 0.15,
+    prestigeGoldExponent: 0.2,
+    eventChancePerMinute: 0.02,
+    playerMaxHp: 100,
+    playerDamageBase: 1,
+    playerDamagePerLevel: 0.5,
   });
   assert.equal(parsed.skillRateK, 0.1);
   assert.equal(parsed.offlineCapSec, 43200);
+  assert.equal(parsed.playerMaxHp, 100);
 });
 
 test("skill requires xp curve and unlock level", () => {

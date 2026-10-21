@@ -21,6 +21,7 @@ import {
   upgradesFileSchema,
   zonesFileSchema,
 } from "../../src/infrastructure/content/schemas.ts";
+import { FileContentRepository } from "../../src/infrastructure/content/loader.ts";
 
 const contentDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -33,6 +34,19 @@ async function readContent(name: string): Promise<unknown> {
   const text = await readFile(join(contentDir, name), "utf8");
   return JSON.parse(text) as unknown;
 }
+
+test("the shipped content directory loads through the repository", async () => {
+  const repo = new FileContentRepository(contentDir);
+  const result = await repo.load();
+  assert.equal(result.isOk(), true);
+  if (result.isOk()) {
+    assert.equal(result.value.skills.length, 8);
+    assert.equal(result.value.zones.length, 8);
+    assert.equal(result.value.quests.length, 10);
+    assert.equal(result.value.events.length, 6);
+    assert.equal(result.value.upgrades.length, 12);
+  }
+});
 
 test("skills.json covers every skill id exactly once", async () => {
   const skills = skillsFileSchema.parse(await readContent("skills.json"));

@@ -1,11 +1,17 @@
 export const DEFAULT_SKILL_RATE_K = 0.1;
+export const DEFAULT_XP_BASE = 15;
+export const DEFAULT_XP_EXPONENT = 1.4;
 export const MAX_TRADING_DISCOUNT = 0.4;
 export const TRADING_DISCOUNT_PER_LEVEL = 0.02;
 export const MARKET_DRIFT_RANGE = 0.3;
 
-export function xpToNext(level: number): number {
+export function xpToNext(
+  level: number,
+  base = DEFAULT_XP_BASE,
+  exponent = DEFAULT_XP_EXPONENT,
+): number {
   if (level < 1) throw new RangeError(`level must be >= 1, got ${level}`);
-  return 15 * Math.pow(level, 1.4);
+  return base * Math.pow(level, exponent);
 }
 
 export function totalXpToReach(level: number): number {
