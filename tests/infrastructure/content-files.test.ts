@@ -4,7 +4,12 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { SKILL_IDS } from "../../src/domain/game/types.ts";
-import { itemsFileSchema, recipesFileSchema, skillsFileSchema } from "../../src/infrastructure/content/schemas.ts";
+import {
+  itemsFileSchema,
+  recipesFileSchema,
+  skillsFileSchema,
+  upgradesFileSchema,
+} from "../../src/infrastructure/content/schemas.ts";
 
 const contentDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -67,6 +72,30 @@ test("recipes.json covers every skill and only references known items", async ()
   }
   assert.equal(new Set(recipes.map((r) => r.id)).size, recipes.length);
   assert.ok(recipes.length >= 40);
+});
+
+test("upgrades.json defines the planned building set with sane curves", async () => {
+  const upgrades = upgradesFileSchema.parse(await readContent("upgrades.json"));
+  assert.equal(upgrades.length, 12);
+  assert.equal(
+    new Set(upgrades.map((upgrade) => upgrade.id)).size,
+    upgrades.length,
+  );
+  for (const upgrade of upgrades) {
+    assert.ok(upgrade.maxLevel >= 1);
+    assert.ok(upgrade.costBase > 0);
+    assert.ok(upgrade.costGrowth >= 1);
+    if (upgrade.effect.kind === "unlock") {
+      assert.ok(upgrade.effect.feature.length > 0);
+    } else {
+      assert.ok(upgrade.effect.valuePerLevel > 0);
+    }
+  }
+  const kinds = new Set(upgrades.map((upgrade) => upgrade.effect.kind));
+  assert.deepEqual(
+    [...kinds].sort(),
+    ["passiveIncome", "productionMultiplier", "unlock", "xpMultiplier"],
+  );
 });
 
 test("skills.json uses the shared xp curve and sane unlock levels", async () => {

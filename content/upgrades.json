@@ -1,0 +1,98 @@
+[
+  {
+    "id": "axe",
+    "name": "Топор",
+    "maxLevel": 10,
+    "costBase": 120,
+    "costGrowth": 1.15,
+    "effect": { "kind": "productionMultiplier", "skill": "chopping", "valuePerLevel": 0.15 }
+  },
+  {
+    "id": "pickaxe",
+    "name": "Кирка",
+    "maxLevel": 10,
+    "costBase": 130,
+    "costGrowth": 1.15,
+    "effect": { "kind": "productionMultiplier", "skill": "mining", "valuePerLevel": 0.15 }
+  },
+  {
+    "id": "forge",
+    "name": "Кузница",
+    "maxLevel": 8,
+    "costBase": 400,
+    "costGrowth": 1.25,
+    "effect": { "kind": "productionMultiplier", "skill": "mining", "valuePerLevel": 0.2 }
+  },
+  {
+    "id": "campfire",
+    "name": "Костёр",
+    "maxLevel": 6,
+    "costBase": 200,
+    "costGrowth": 1.2,
+    "effect": { "kind": "productionMultiplier", "skill": "cooking", "valuePerLevel": 0.2 }
+  },
+  {
+    "id": "logging_camp",
+    "name": "Лесорубка",
+    "maxLevel": 8,
+    "costBase": 350,
+    "costGrowth": 1.25,
+    "effect": { "kind": "productionMultiplier", "skill": "chopping", "valuePerLevel": 0.25 }
+  },
+  {
+    "id": "quarry",
+    "name": "Каменоломня",
+    "maxLevel": 8,
+    "costBase": 360,
+    "costGrowth": 1.25,
+    "effect": { "kind": "productionMultiplier", "skill": "mining", "valuePerLevel": 0.25 }
+  },
+  {
+    "id": "farm",
+    "name": "Ферма",
+    "maxLevel": 8,
+    "costBase": 380,
+    "costGrowth": 1.25,
+    "effect": { "kind": "productionMultiplier", "skill": "cooking", "valuePerLevel": 0.2 }
+  },
+  {
+    "id": "alchemy_lab",
+    "name": "Алхим-лаборатория",
+    "maxLevel": 6,
+    "costBase": 600,
+    "costGrowth": 1.3,
+    "effect": { "kind": "productionMultiplier", "skill": "magic", "valuePerLevel": 0.3 }
+  },
+  {
+    "id": "bank",
+    "name": "Банк",
+    "maxLevel": 5,
+    "costBase": 800,
+    "costGrowth": 1.35,
+    "effect": { "kind": "passiveIncome", "valuePerLevel": 0.02 }
+  },
+  {
+    "id": "auction",
+    "name": "Аукцион",
+    "maxLevel": 5,
+    "costBase": 900,
+    "costGrowth": 1.35,
+    "effect": { "kind": "passiveIncome", "valuePerLevel": 0.015 }
+  },
+  {
+    "id": "teleport",
+    "name": "Телепорт",
+    "maxLevel": 3,
+    "costBase": 1500,
+    "costGrowth": 1.5,
+    "effect": { "kind": "unlock", "feature": "fast_travel" }
+  },
+  {
+    "id": "tent",
+    "name": "Палатка",
+    "maxLevel": 5,
+    "costBase": 250,
+    "costGrowth": 1.2,
+    "effect": { "kind": "xpMultiplier", "valuePerLevel": 0.1 }
+  }
+]
