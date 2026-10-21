@@ -1,0 +1,134 @@
+[
+  {
+    "id": "quest_first_wood",
+    "name": "Первые дрова",
+    "description": "Соберите древесину и обкатайте топор.",
+    "steps": [
+      { "kind": "collect", "target": "wood", "qty": 20 },
+      { "kind": "craft", "target": "make_axe", "qty": 1 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 50 },
+      { "kind": "skillLevel", "id": "chopping", "qty": 1 }
+    ]
+  },
+  {
+    "id": "quest_stone_age",
+    "name": "Каменный век",
+    "description": "Набейте камня и сделайте молот.",
+    "steps": [
+      { "kind": "collect", "target": "stone", "qty": 25 },
+      { "kind": "craft", "target": "make_hammer", "qty": 1 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 120 },
+      { "kind": "item", "id": "pickaxe", "qty": 1 }
+    ]
+  },
+  {
+    "id": "quest_hunter",
+    "name": "Первый трофей",
+    "description": "Добудьте шкуру и обработайте её.",
+    "steps": [
+      { "kind": "kill", "target": "wolf", "qty": 3 },
+      { "kind": "craft", "target": "make_hide", "qty": 1 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 200 },
+      { "kind": "item", "id": "bow", "qty": 1 }
+    ]
+  },
+  {
+    "id": "quest_smelt",
+    "name": "Первый слиток",
+    "description": "Выплавите железо и сделайте кирку.",
+    "steps": [
+      { "kind": "collect", "target": "iron_ore", "qty": 10 },
+      { "kind": "craft", "target": "smelt_iron", "qty": 3 },
+      { "kind": "craft", "target": "make_pickaxe", "qty": 1 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 300 },
+      { "kind": "skillLevel", "id": "mining", "qty": 2 }
+    ]
+  },
+  {
+    "id": "quest_swamp",
+    "name": "Болотная нечисть",
+    "description": "Откройте болото: убейте слизь и соберите травы.",
+    "steps": [
+      { "kind": "kill", "target": "swamp_ooze", "qty": 4 },
+      { "kind": "collect", "target": "herb", "qty": 10 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 600 },
+      { "kind": "upgrade", "id": "campfire", "qty": 1 }
+    ]
+  },
+  {
+    "id": "quest_cave",
+    "name": "Вход в пещеру",
+    "description": "Победите пещерных пауков и найдите осколок кристалла.",
+    "steps": [
+      { "kind": "kill", "target": "cave_spider", "qty": 5 },
+      { "kind": "collect", "target": "crystal_shard", "qty": 1 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 1200 },
+      { "kind": "item", "id": "lantern", "qty": 1 }
+    ]
+  },
+  {
+    "id": "quest_alchemist",
+    "name": "Аптекарь",
+    "description": "Сварите зелье здоровья.",
+    "steps": [
+      { "kind": "craft", "target": "make_potion_health", "qty": 2 },
+      { "kind": "level", "target": "magic", "qty": 8 }
+    ],
+    "rewards": [
+      { "kind": "item", "id": "potion_strength", "qty": 2 },
+      { "kind": "skillLevel", "id": "magic", "qty": 2 }
+    ]
+  },
+  {
+    "id": "quest_ruins",
+    "name": "Забытый орден",
+    "description": "Найдите древнюю печать в руинах.",
+    "steps": [
+      { "kind": "kill", "target": "ruin_guardian", "qty": 3 },
+      { "kind": "collect", "target": "ancient_seal", "qty": 1 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 2500 },
+      { "kind": "item", "id": "workbench", "qty": 1 }
+    ]
+  },
+  {
+    "id": "quest_dragon",
+    "name": "Логово дракона",
+    "description": "Добудьте чешую дракона.",
+    "steps": [
+      { "kind": "kill", "target": "dragon", "qty": 1 },
+      { "kind": "collect", "target": "dragon_scale", "qty": 2 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 10000 },
+      { "kind": "upgrade", "id": "alchemy_lab", "qty": 1 }
+    ]
+  },
+  {
+    "id": "quest_master_craftsman",
+    "name": "Мастер ремесла",
+    "description": "Соберите полный набор инструментов и выплавьте сталь.",
+    "steps": [
+      { "kind": "craft", "target": "make_sword", "qty": 1 },
+      { "kind": "craft", "target": "make_steel", "qty": 5 },
+      { "kind": "level", "target": "crafting", "qty": 20 }
+    ],
+    "rewards": [
+      { "kind": "gold", "id": "gold", "qty": 5000 },
+      { "kind": "upgrade", "id": "forge", "qty": 2 }
+    ]
+  }
+]

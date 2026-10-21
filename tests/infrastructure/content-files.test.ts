@@ -7,6 +7,7 @@ import { SKILL_IDS } from "../../src/domain/game/types.ts";
 import {
   itemsFileSchema,
   monstersFileSchema,
+  questsFileSchema,
   recipesFileSchema,
   skillsFileSchema,
   upgradesFileSchema,
@@ -134,6 +135,48 @@ test("monsters.json has sane combat stats and only known drops", async () => {
     for (const drop of monster.dropTable) {
       assert.ok(itemIds.has(drop.item), `${monster.id} -> ${drop.item}`);
       assert.ok(drop.chance > 0 && drop.chance <= 1);
+    }
+  }
+});
+
+test("quests.json has 10 chains referencing known content", async () => {
+  const quests = questsFileSchema.parse(await readContent("quests.json"));
+  const items = itemsFileSchema.parse(await readContent("items.json"));
+  const recipes = recipesFileSchema.parse(await readContent("recipes.json"));
+  const monsters = monstersFileSchema.parse(await readContent("monsters.json"));
+  const upgrades = upgradesFileSchema.parse(await readContent("upgrades.json"));
+  const itemIds = new Set(items.map((item) => item.id));
+  const recipeIds = new Set(recipes.map((recipe) => recipe.id));
+  const monsterIds = new Set(monsters.map((monster) => monster.id));
+  const upgradeIds = new Set(upgrades.map((upgrade) => upgrade.id));
+
+  assert.equal(quests.length, 10);
+  assert.equal(new Set(quests.map((quest) => quest.id)).size, quests.length);
+
+  for (const quest of quests) {
+    assert.ok(quest.steps.length > 0);
+    for (const step of quest.steps) {
+      if (step.kind === "collect") assert.ok(itemIds.has(step.target), `${quest.id} -> ${step.target}`);
+      if (step.kind === "craft") assert.ok(recipeIds.has(step.target), `${quest.id} -> ${step.target}`);
+      if (step.kind === "kill") assert.ok(monsterIds.has(step.target), `${quest.id} -> ${step.target}`);
+      if (step.kind === "level") assert.ok(SKILL_IDS.includes(step.target as never), `${quest.id} -> ${step.target}`);
+      if (step.kind === "upgrade") assert.ok(upgradeIds.has(step.target), `${quest.id} -> ${step.target}`);
+    }
+    for (const reward of quest.rewards) {
+      if (reward.kind === "item") assert.ok(itemIds.has(reward.id), `${quest.id} -> ${reward.id}`);
+      if (reward.kind === "upgrade") assert.ok(upgradeIds.has(reward.id), `${quest.id} -> ${reward.id}`);
+      if (reward.kind === "skillLevel") assert.ok(SKILL_IDS.includes(reward.id as never), `${quest.id} -> ${reward.id}`);
+    }
+  }
+});
+
+test("zones gated by quests point at existing quests", async () => {
+  const zones = zonesFileSchema.parse(await readContent("zones.json"));
+  const quests = questsFileSchema.parse(await readContent("quests.json"));
+  const questIds = new Set(quests.map((quest) => quest.id));
+  for (const zone of zones) {
+    if (zone.unlock.kind === "quest") {
+      assert.ok(questIds.has(zone.unlock.quest), `${zone.id} -> ${zone.unlock.quest}`);
     }
   }
 });
