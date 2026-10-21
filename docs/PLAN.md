@@ -21,7 +21,7 @@
 | Стратегия контента | **B**: структура слоёв — по MIT-Antimatter Dimensions, числовые кривые — ориентир Melvor-вики |
 | Дебаг-страница     | статическая (написанная руками) HTML-страница состояния игры, тот же HTTP-сервер              |
 
-Зависимости MVP: `@modelcontextprotocol/server`, `mcp-handler`, `zod@^4`. Dev: `typescript`, `@types/node`.
+Зависимости MVP: `@modelcontextprotocol/server`, `mcp-handler`, `zod@^4`, `neverthrow@^8.2` (Result/Ok/Err в домене и application). Dev: `typescript`, `@types/node`.
 
 TypeScript: dev — нативный strip-types (`node --watch src/bootstrap/server.ts`, только erasable-синтаксис: без `enum`, без parameter properties), prod — `tsc` → `dist` → `node dist/bootstrap/server.js`.
 
@@ -148,6 +148,8 @@ HTTP-эндпоинт: `POST/GET /mcp` (Streamable HTTP, `mcp-handler`). На т
 ### 4.3 Ошибки
 
 Все мутации возвращают `Result` с доменной ошибкой, а не бросают исключение: агент читает текст ошибки и чинит поведение. `game_log` дублирует ошибки в ленту, чтобы агент мог разобрать историю.
+
+`Result` — из `neverthrow` (`ok`/`err`, `Result<T, E>`). Доменная ошибка — discriminated union `DomainError` с полем `code`, `message` и контекстом; текст `message` агент получает в ответе инструмента как есть.
 
 ---
 
