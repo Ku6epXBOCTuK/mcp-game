@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { SKILL_IDS } from "../../src/domain/game/types.ts";
 import {
+  eventsFileSchema,
   itemsFileSchema,
   monstersFileSchema,
   questsFileSchema,
@@ -177,6 +178,26 @@ test("zones gated by quests point at existing quests", async () => {
   for (const zone of zones) {
     if (zone.unlock.kind === "quest") {
       assert.ok(questIds.has(zone.unlock.quest), `${zone.id} -> ${zone.unlock.quest}`);
+    }
+  }
+});
+
+test("events.json has 6 timed events with sane modifiers", async () => {
+  const events = eventsFileSchema.parse(await readContent("events.json"));
+  assert.equal(events.length, 6);
+  assert.equal(new Set(events.map((event) => event.id)).size, events.length);
+  for (const event of events) {
+    assert.ok(event.durationSec >= 300 && event.durationSec <= 900, event.id);
+    assert.ok(event.weight > 0, event.id);
+    assert.ok(event.modifiers.length > 0, event.id);
+    for (const modifier of event.modifiers) {
+      if (modifier.kind === "skillLevel") {
+        assert.ok(modifier.target !== undefined, event.id);
+        assert.ok(SKILL_IDS.includes(modifier.target as never), event.id);
+        assert.ok(Number.isInteger(modifier.value), event.id);
+      } else {
+        assert.ok(modifier.value > 0, event.id);
+      }
     }
   }
 });
