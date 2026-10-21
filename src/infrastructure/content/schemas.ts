@@ -1,6 +1,19 @@
-import { z } from "zod";
+﻿import { z } from "zod";
+import { SKILL_IDS, type SkillId } from "../../domain/game/types.ts";
+import type {
+  BalanceContent,
+  EventContent,
+  GameContent,
+  ItemContent,
+  MonsterContent,
+  QuestContent,
+  RecipeContent,
+  SkillContent,
+  UpgradeContent,
+  ZoneContent,
+} from "../../domain/content/types.ts";
 
-export const skillIdSchema = z.string().min(1);
+export const skillIdSchema = z.enum(SKILL_IDS);
 export const itemIdSchema = z.string().min(1);
 
 export const itemTypeSchema = z.enum([
@@ -21,8 +34,7 @@ export const skillSchema = z.object({
   }),
   unlockLevel: z.number().int().min(1),
   icon: z.string().min(1),
-});
-export type SkillContent = z.infer<typeof skillSchema>;
+}) satisfies z.ZodType<SkillContent>;
 
 export const itemSchema = z.object({
   id: itemIdSchema,
@@ -31,8 +43,7 @@ export const itemSchema = z.object({
   sellPrice: z.number().nonnegative(),
   buyPrice: z.number().nonnegative(),
   description: z.string().optional(),
-});
-export type ItemContent = z.infer<typeof itemSchema>;
+}) satisfies z.ZodType<ItemContent>;
 
 export const recipeSchema = z.object({
   id: z.string().min(1),
@@ -51,8 +62,7 @@ export const recipeSchema = z.object({
   skill: skillIdSchema,
   skillLevel: z.number().int().min(1),
   timeSec: z.number().positive(),
-});
-export type RecipeContent = z.infer<typeof recipeSchema>;
+}) satisfies z.ZodType<RecipeContent>;
 
 export const upgradeEffectSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -74,7 +84,6 @@ export const upgradeEffectSchema = z.discriminatedUnion("kind", [
     feature: z.string().min(1),
   }),
 ]);
-export type UpgradeEffect = z.infer<typeof upgradeEffectSchema>;
 
 export const upgradeSchema = z.object({
   id: z.string().min(1),
@@ -84,14 +93,12 @@ export const upgradeSchema = z.object({
   costGrowth: z.number().min(1),
   effect: upgradeEffectSchema,
 });
-export type UpgradeContent = z.infer<typeof upgradeSchema>;
 
 export const dropSchema = z.object({
   item: itemIdSchema,
   chance: z.number().min(0).max(1),
   qty: z.number().int().min(1),
 });
-export type DropContent = z.infer<typeof dropSchema>;
 
 export const monsterSchema = z.object({
   id: z.string().min(1),
@@ -102,8 +109,7 @@ export const monsterSchema = z.object({
   attackInterval: z.number().positive(),
   xp: z.number().nonnegative(),
   dropTable: z.array(dropSchema).min(1),
-});
-export type MonsterContent = z.infer<typeof monsterSchema>;
+}) satisfies z.ZodType<MonsterContent>;
 
 export const zoneUnlockSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -119,29 +125,25 @@ export const zoneUnlockSchema = z.discriminatedUnion("kind", [
     kind: z.literal("none"),
   }),
 ]);
-export type ZoneUnlock = z.infer<typeof zoneUnlockSchema>;
 
 export const zoneSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   unlock: zoneUnlockSchema,
   monsters: z.array(z.string().min(1)).min(1),
-});
-export type ZoneContent = z.infer<typeof zoneSchema>;
+}) satisfies z.ZodType<ZoneContent>;
 
 export const questStepSchema = z.object({
   kind: z.enum(["collect", "craft", "kill", "level", "upgrade"]),
   target: z.string().min(1),
   qty: z.number().int().min(1),
 });
-export type QuestStep = z.infer<typeof questStepSchema>;
 
 export const questRewardSchema = z.object({
   kind: z.enum(["item", "skillLevel", "upgrade", "gold"]),
   id: z.string().min(1),
   qty: z.number().int().min(1),
 });
-export type QuestReward = z.infer<typeof questRewardSchema>;
 
 export const questSchema = z.object({
   id: z.string().min(1),
@@ -149,15 +151,13 @@ export const questSchema = z.object({
   description: z.string().optional(),
   steps: z.array(questStepSchema).min(1),
   rewards: z.array(questRewardSchema),
-});
-export type QuestContent = z.infer<typeof questSchema>;
+}) satisfies z.ZodType<QuestContent>;
 
 export const eventModifierSchema = z.object({
   kind: z.enum(["productionMultiplier", "goldMultiplier", "xpMultiplier", "skillLevel"]),
   target: z.string().optional(),
   value: z.number(),
 });
-export type EventModifier = z.infer<typeof eventModifierSchema>;
 
 export const eventSchema = z.object({
   id: z.string().min(1),
@@ -165,8 +165,7 @@ export const eventSchema = z.object({
   durationSec: z.number().int().min(1),
   modifiers: z.array(eventModifierSchema).min(1),
   weight: z.number().positive(),
-});
-export type EventContent = z.infer<typeof eventSchema>;
+}) satisfies z.ZodType<EventContent>;
 
 export const balanceSchema = z.object({
   skillRateK: z.number().min(0),
@@ -181,8 +180,7 @@ export const balanceSchema = z.object({
   offlineCapSec: z.number().int().min(1),
   rateBase: z.record(z.string(), z.number().positive()),
   costGrowth: z.record(z.string(), z.number().min(1)),
-});
-export type BalanceContent = z.infer<typeof balanceSchema>;
+}) satisfies z.ZodType<BalanceContent>;
 
 export const skillsFileSchema = z.array(skillSchema);
 export const itemsFileSchema = z.array(itemSchema);
@@ -192,6 +190,17 @@ export const monstersFileSchema = z.array(monsterSchema);
 export const zonesFileSchema = z.array(zoneSchema);
 export const questsFileSchema = z.array(questSchema);
 export const eventsFileSchema = z.array(eventSchema);
+
+type AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+
+export type UpgradesSchemaMatchesDomain = AssertEqual<
+  z.infer<typeof upgradesFileSchema>,
+  UpgradeContent[]
+>;
+export type ContentSchemaMatchesDomain = AssertEqual<
+  z.infer<typeof gameContentSchema>,
+  GameContent
+>;
 
 export const gameContentSchema = z.object({
   skills: skillsFileSchema,
@@ -204,4 +213,7 @@ export const gameContentSchema = z.object({
   events: eventsFileSchema,
   balance: balanceSchema,
 });
-export type GameContent = z.infer<typeof gameContentSchema>;
+
+export type { SkillId };
+
+

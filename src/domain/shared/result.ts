@@ -153,18 +153,26 @@ export function unknownCommand(command: string): Result<never, DomainError> {
   });
 }
 
-export function contentInvalid(
+export function contentInvalidError(
   path: string,
   id: string,
   detail: string,
-): Result<never, DomainError> {
-  return err({
+): DomainError {
+  return {
     code: "ContentInvalid",
     message: `Контент "${path}" (id "${id}") невалиден: ${detail}.`,
     path,
     id,
     detail,
-  });
+  };
+}
+
+export function contentInvalid(
+  path: string,
+  id: string,
+  detail: string,
+): Result<never, DomainError> {
+  return err(contentInvalidError(path, id, detail));
 }
 
 export function notSupported(feature: string): Result<never, DomainError> {
