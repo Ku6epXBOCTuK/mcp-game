@@ -1,7 +1,13 @@
-import { productionRate, xpToNext } from "../shared/curves.ts";
+import { productionRate } from "../shared/curves.ts";
 import { nextRandom } from "../shared/rng.ts";
 import { refreshMarket } from "./market.ts";
 import { accrueInterest, applyGoldIncome } from "./bank.ts";
+import {
+	eventMultipliers,
+	upgradeMultiplier,
+	type Multipliers,
+} from "./multipliers.ts";
+import { gainXp } from "./skills.ts";
 import {
 	consumePotions,
 	maxHpFor,
@@ -24,34 +30,9 @@ export type TickOptions = {
 	now: number;
 };
 
-type Multipliers = {
-	production: number;
-	gold: number;
-	xp: number;
-	skillBonus: Partial<Record<SkillId, number>>;
-};
-
 function skillLevelOf(state: GameState, skill: SkillId, bonus: number): number {
 	const current = state.skills[skill];
 	return (current?.level ?? 1) + bonus;
-}
-
-function upgradeMultiplier(
-	state: GameState,
-	content: GameContent,
-	kind: "productionMultiplier" | "xpMultiplier",
-	skill: SkillId,
-): number {
-	let multiplier = 1;
-	for (const upgrade of content.upgrades) {
-		if (upgrade.effect.kind !== kind) continue;
-		const level = state.upgrades[upgrade.id] ?? 0;
-		if (level <= 0) continue;
-		const target = upgrade.effect.skill;
-		if (target && target !== skill) continue;
-		multiplier += upgrade.effect.valuePerLevel * level;
-	}
-	return multiplier;
 }
 
 function passiveIncomePerSec(state: GameState, content: GameContent): number {
@@ -63,66 +44,6 @@ function passiveIncomePerSec(state: GameState, content: GameContent): number {
 		income += upgrade.effect.valuePerLevel * level;
 	}
 	return income;
-}
-
-function eventMultipliers(state: GameState, content: GameContent): Multipliers {
-	const multipliers: Multipliers = {
-		production: 1,
-		gold: 1,
-		xp: 1,
-		skillBonus: {},
-	};
-	const byId = new Map(content.events.map((event) => [event.id, event]));
-	for (const active of state.activeEvents) {
-		const event = byId.get(active.id);
-		if (!event) continue;
-		for (const modifier of event.modifiers) {
-			switch (modifier.kind) {
-				case "productionMultiplier":
-					multipliers.production *= modifier.value;
-					break;
-				case "goldMultiplier":
-					multipliers.gold *= modifier.value;
-					break;
-				case "xpMultiplier":
-					multipliers.xp *= modifier.value;
-					break;
-				case "skillLevel": {
-					const target = modifier.target as SkillId | undefined;
-					if (target) {
-						multipliers.skillBonus[target] =
-							(multipliers.skillBonus[target] ?? 0) + modifier.value;
-					}
-					break;
-				}
-			}
-		}
-	}
-	return multipliers;
-}
-
-export function gainXp(
-	state: GameState,
-	skill: SkillId,
-	amount: number,
-	xpBase: number,
-	xpExponent: number,
-): GameState {
-	if (amount <= 0) return state;
-	const current = state.skills[skill];
-	if (!current) return state;
-	let level = current.level;
-	let xp = current.xp + amount;
-	let need = xpToNext(level, xpBase, xpExponent);
-	while (xp >= need) {
-		xp -= need;
-		level += 1;
-		need = xpToNext(level, xpBase, xpExponent);
-	}
-	return {
-		...state,
-		skills: { ...state.skills, [skill]: { id: skill, level, xp } },
-	};
 }
 
 function addItem(state: GameState, itemId: string, qty: number): GameState {

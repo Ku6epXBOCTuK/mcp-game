@@ -125,6 +125,7 @@ export type BalanceContent = {
 	xpExponent: number;
 	tradingDiscountPerLevel: number;
 	tradingDiscountMax: number;
+	tradingXpPerGold?: number | undefined;
 	marketDriftRange: number;
 	marketDriftIntervalSec: number;
 	marketReversion?: number | undefined;

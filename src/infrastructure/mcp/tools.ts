@@ -3,7 +3,7 @@ import type { GameService } from "../../application/use-cases/game-service.ts";
 import type { GameState } from "../../domain/game/types.ts";
 import type { SkillId } from "../../domain/game/types.ts";
 import type { GameContent } from "../../domain/content/types.ts";
-import { xpToNext } from "../../domain/shared/curves.ts";
+import { tradingDiscount, xpToNext } from "../../domain/shared/curves.ts";
 import { upgradePrice } from "../../domain/game/actions.ts";
 import {
 	forecastCombat,
@@ -477,7 +477,13 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 					available:
 						(state.skills[recipe.skill]?.level ?? 0) >= recipe.skillLevel,
 				}));
-			return jsonResult({ skills, resources, recipes });
+			const tradingLevel = state.skills.trading?.level ?? 1;
+			const trading = {
+				level: tradingLevel,
+				sellBonusPercent: Math.round(tradingDiscount(tradingLevel) * 100),
+				xpPerGold: content.balance.tradingXpPerGold ?? 0.1,
+			};
+			return jsonResult({ skills, resources, recipes, trading });
 		},
 	};
 

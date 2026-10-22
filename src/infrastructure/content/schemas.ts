@@ -183,6 +183,7 @@ export const balanceSchema = z.object({
 	xpExponent: z.number().positive(),
 	tradingDiscountPerLevel: z.number().min(0),
 	tradingDiscountMax: z.number().min(0),
+	tradingXpPerGold: z.number().min(0).optional(),
 	marketDriftRange: z.number().min(0),
 	marketDriftIntervalSec: z.number().int().min(1),
 	marketReversion: z.number().min(0).max(1).optional(),

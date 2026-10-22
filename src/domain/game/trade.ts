@@ -9,8 +9,30 @@ import type { GameContent } from "../content/types.ts";
 import type { GameState, ItemId } from "./types.ts";
 import { marketBuyPrice, marketSellPrice } from "./market.ts";
 import { applyGoldIncome } from "./bank.ts";
+import { eventMultipliers, upgradeMultiplier } from "./multipliers.ts";
+import { gainXp } from "./skills.ts";
 
 import type { DomainError } from "../shared/errors.ts";
+
+const DEFAULT_TRADING_XP_PER_GOLD = 0.1;
+
+// NOTE: only selling pays the trading xp: a buy costs gold and the market
+// spread makes a round trip a loss, so paying for xp would be a gold sink.
+function tradingXp(
+	state: GameState,
+	content: GameContent,
+	gold: number,
+): number {
+	const rate = content.balance.tradingXpPerGold ?? DEFAULT_TRADING_XP_PER_GOLD;
+	if (rate <= 0 || gold <= 0) return 0;
+	const multipliers = eventMultipliers(state, content);
+	return (
+		gold *
+		rate *
+		multipliers.xp *
+		upgradeMultiplier(state, content, "xpMultiplier", "trading")
+	);
+}
 
 export function sellItem(
 	state: GameState,
@@ -45,12 +67,19 @@ export function sellItem(
 	const left = available - amount;
 	if (left <= 0) delete inventory[itemId];
 	else inventory[itemId] = left;
+	const next = gainXp(
+		applyGoldIncome(state, content, gold),
+		"trading",
+		tradingXp(state, content, gold),
+		content.balance.xpBase,
+		content.balance.xpExponent,
+	);
 	return ok({
-		...applyGoldIncome(state, content, gold),
+		...next,
 		inventory,
 		stats: {
-			...state.stats,
-			totalGoldEarned: state.stats.totalGoldEarned + gold,
+			...next.stats,
+			totalGoldEarned: next.stats.totalGoldEarned + gold,
 		},
 		updatedAt: now,
 	});

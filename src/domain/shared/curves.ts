@@ -50,6 +50,8 @@ export function productionRate(params: {
 	return rateBase * (1 + k * skillLevel) * upgradeMult * prestigeMult;
 }
 
+// NOTE: the trader skill raises the sell price, it does not lower the buy
+// price: a discount on both sides used to make round trips profitable.
 export function tradingDiscount(tradingLevel: number): number {
 	if (tradingLevel < 0)
 		throw new RangeError(`tradingLevel must be >= 0, got ${tradingLevel}`);
