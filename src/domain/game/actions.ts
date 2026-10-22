@@ -27,8 +27,10 @@ import { questCompleted } from "./quests.ts";
 import type {
 	ActiveAction,
 	CombatBuff,
+	CraftAction,
 	FightAction,
 	GameState,
+	GatherAction,
 	ItemId,
 	MonsterId,
 	RecipeId,
@@ -42,6 +44,48 @@ export type StartActionCommand =
 	| { kind: "gather"; skill: SkillId; targetId: string }
 	| { kind: "craft"; recipeId: RecipeId }
 	| { kind: "fight"; monsterId: MonsterId };
+
+export const MAX_PAUSED_ACTIONS = 3;
+
+function pausedOf(state: GameState): ActiveAction[] {
+	return state.pausedActions ?? [];
+}
+
+function findPaused(state: GameState, key: string): ActiveAction | undefined {
+	return pausedOf(state).find((action) => describeAction(action) === key);
+}
+
+// NOTE: the progress of a paused action is kept, so switching between jobs
+// costs nothing but the time to decide. Only one action ever runs.
+function resumePaused(
+	state: GameState,
+	fresh: ActiveAction,
+): { action: ActiveAction; pausedActions: ActiveAction[] } {
+	const key = describeAction(fresh);
+	const paused = findPaused(state, key);
+	const pausedActions = pausedOf(state).filter(
+		(action) => describeAction(action) !== key,
+	);
+	if (!paused) return { action: fresh, pausedActions };
+	if (fresh.kind === "fight" && paused.kind === "fight") {
+		return {
+			action: {
+				...fresh,
+				monsterHpLeft: paused.monsterHpLeft,
+				monsterHitInSec: paused.monsterHitInSec,
+				damageMultiplier: paused.damageMultiplier ?? 1,
+			},
+			pausedActions,
+		};
+	}
+	if (fresh.kind === "craft" && paused.kind === "craft") {
+		return { action: { ...fresh, progress: paused.progress }, pausedActions };
+	}
+	if (fresh.kind === "gather" && paused.kind === "gather") {
+		return { action: { ...fresh, progress: paused.progress }, pausedActions };
+	}
+	return { action: fresh, pausedActions };
+}
 
 export function startAction(
 	state: GameState,
@@ -75,7 +119,7 @@ export function startAction(
 		if (level < requiredLevel) {
 			return skillTooLow(item.skill, requiredLevel, level);
 		}
-		const action: ActiveAction = {
+		const action: GatherAction = {
 			kind: "gather",
 			skill: command.skill,
 			targetId: command.targetId,
@@ -83,7 +127,13 @@ export function startAction(
 			endsAt: now,
 			progress: 0,
 		};
-		return ok({ ...state, activeAction: action, updatedAt: now });
+		const resumed = resumePaused(state, action);
+		return ok({
+			...state,
+			pausedActions: resumed.pausedActions,
+			activeAction: resumed.action,
+			updatedAt: now,
+		});
 	}
 
 	if (command.kind === "craft") {
@@ -107,7 +157,7 @@ export function startAction(
 				return notEnoughResources(input.item, input.qty, available);
 			}
 		}
-		const action: ActiveAction = {
+		const action: CraftAction = {
 			kind: "craft",
 			skill: recipe.skill,
 			targetId: recipe.id,
@@ -115,7 +165,13 @@ export function startAction(
 			endsAt: now + recipe.timeSec,
 			progress: 0,
 		};
-		return ok({ ...state, activeAction: action, updatedAt: now });
+		const resumed = resumePaused(state, action);
+		return ok({
+			...state,
+			pausedActions: resumed.pausedActions,
+			activeAction: resumed.action,
+			updatedAt: now,
+		});
 	}
 
 	const monster = content.monsters.find(
@@ -167,7 +223,8 @@ export function startAction(
 
 	let next = state;
 	let buffs: CombatBuff[] = [...(state.combatBuffs ?? [])];
-	if (policy.strengthPotionWhenLosing) {
+	const pausedFight = findPaused(state, `fight:${monster.id}`);
+	if (!pausedFight && policy.strengthPotionWhenLosing) {
 		const current = baseDps * buffDamageMultiplier(buffs);
 		if (!canWinWith(current, state.health.hp)) {
 			for (const itemId of ["elixir", "potion_strength"]) {
@@ -189,18 +246,39 @@ export function startAction(
 			}
 		}
 	}
-	const action: FightAction = {
-		kind: "fight",
-		skill: "combat",
-		targetId: monster.id,
-		startedAt: now,
-		endsAt: now,
-		monsterHpLeft: monster.hp,
-		monsterHitInSec:
-			monster.attackInterval > 0 ? monster.attackInterval : Infinity,
-		damageMultiplier: buffDamageMultiplier(buffs),
-	};
-	return ok({ ...next, combatBuffs: [], activeAction: action, updatedAt: now });
+	const action: FightAction =
+		pausedFight && pausedFight.kind === "fight"
+			? {
+					kind: "fight",
+					skill: "combat",
+					targetId: monster.id,
+					startedAt: now,
+					endsAt: now,
+					monsterHpLeft: pausedFight.monsterHpLeft,
+					monsterHitInSec: pausedFight.monsterHitInSec,
+					damageMultiplier: pausedFight.damageMultiplier ?? 1,
+				}
+			: {
+					kind: "fight",
+					skill: "combat",
+					targetId: monster.id,
+					startedAt: now,
+					endsAt: now,
+					monsterHpLeft: monster.hp,
+					monsterHitInSec:
+						monster.attackInterval > 0 ? monster.attackInterval : Infinity,
+					damageMultiplier: buffDamageMultiplier(buffs),
+				};
+	const pausedActions = pausedOf(state).filter(
+		(entry) => describeAction(entry) !== `fight:${monster.id}`,
+	);
+	return ok({
+		...next,
+		combatBuffs: pausedFight ? (state.combatBuffs ?? []) : [],
+		pausedActions,
+		activeAction: action,
+		updatedAt: now,
+	});
 }
 
 export function cancelAction(
@@ -208,7 +286,28 @@ export function cancelAction(
 	now: number,
 ): Result<GameState, DomainError> {
 	if (!state.activeAction) return noActiveAction();
-	return ok({ ...state, activeAction: null, updatedAt: now });
+	const paused = [...pausedOf(state), state.activeAction];
+	const trimmed =
+		paused.length > MAX_PAUSED_ACTIONS
+			? paused.slice(paused.length - MAX_PAUSED_ACTIONS)
+			: paused;
+	return ok({
+		...state,
+		activeAction: null,
+		pausedActions: trimmed,
+		updatedAt: now,
+	});
+}
+
+export function discardPausedActions(
+	state: GameState,
+	now: number,
+	targetId?: string,
+): GameState {
+	const kept = targetId
+		? pausedOf(state).filter((action) => action.targetId !== targetId)
+		: [];
+	return { ...state, pausedActions: kept, updatedAt: now };
 }
 
 export function describeAction(action: ActiveAction): string {

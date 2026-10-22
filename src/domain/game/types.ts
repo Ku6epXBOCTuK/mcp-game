@@ -151,6 +151,7 @@ export type GameState = {
 	inventory: Inventory;
 	skills: Record<SkillId, SkillState>;
 	activeAction: ActiveAction | null;
+	pausedActions: ActiveAction[];
 	activeEvents: ActiveEvent[];
 	health: Health;
 	upgrades: UpgradeLevels;

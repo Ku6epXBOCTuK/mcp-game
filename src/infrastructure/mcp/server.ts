@@ -63,6 +63,7 @@ export function createMcpServerFactory(deps: McpServerDeps): McpServerFactory {
 									inventory: state.inventory,
 									skills: state.skills,
 									activeAction: state.activeAction,
+									pausedActions: state.pausedActions ?? [],
 									activeEvents: state.activeEvents,
 									upgrades: state.upgrades,
 									prestige: state.prestige,

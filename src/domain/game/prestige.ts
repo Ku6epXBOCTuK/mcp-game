@@ -68,6 +68,7 @@ export function prestige(
 		inventory: {},
 		skills: createSkills(),
 		activeAction: null,
+		pausedActions: [],
 		activeEvents: [],
 		health: {
 			hp: content.balance.playerMaxHp,

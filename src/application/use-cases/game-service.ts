@@ -26,6 +26,7 @@ import type {
 import {
 	startAction,
 	cancelAction,
+	discardPausedActions,
 	buyUpgrade,
 	bankOperation,
 	type BankOperation,
@@ -165,7 +166,33 @@ export class GameService {
 		}
 		const next = { ...context.value, state: result.value };
 		await this.commit(playerId, next, [
-			{ ts: now, type: "action.cancelled", payload: {} },
+			{
+				ts: now,
+				type: "action.cancelled",
+				payload: {
+					target: context.value.state.activeAction?.targetId ?? "",
+					paused: result.value.pausedActions.length,
+				},
+			},
+		]);
+		return ok(next);
+	}
+
+	async discardPausedActions(
+		playerId: PlayerId,
+		targetId?: string,
+	): Promise<UseCaseResult<GameContext>> {
+		const context = await this.loadContext(playerId);
+		if (context.isErr()) return err(context.error);
+		const now = this.clock.now();
+		const state = discardPausedActions(context.value.state, now, targetId);
+		const next = { ...context.value, state };
+		await this.commit(playerId, next, [
+			{
+				ts: now,
+				type: "action.discarded",
+				payload: { target: targetId ?? "", paused: state.pausedActions.length },
+			},
 		]);
 		return ok(next);
 	}

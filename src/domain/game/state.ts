@@ -1,5 +1,6 @@
 import {
 	SKILL_IDS,
+	type ActiveAction,
 	type CombatBuff,
 	type CombatPolicy,
 	type GameState,
@@ -14,7 +15,7 @@ import {
 import { DEFAULT_COMBAT_POLICY, startCombat } from "./combat.ts";
 import type { GameContent } from "../content/types.ts";
 
-export const STATE_VERSION = 7;
+export const STATE_VERSION = 8;
 
 const EVENT_RNG_SALT = 0x9e3779b9;
 
@@ -30,6 +31,8 @@ export function migrateState(
 	const legacyPolicy = (state as { combatPolicy?: CombatPolicy }).combatPolicy;
 	const legacyEventRng = (state as { eventRng?: RngState }).eventRng;
 	const legacyBuffs = (state as { combatBuffs?: CombatBuff[] }).combatBuffs;
+	const legacyPaused = (state as { pausedActions?: ActiveAction[] })
+		.pausedActions;
 	const legacyCounters = state.counters as {
 		gathered: Record<string, number>;
 		crafted: Record<string, number>;
@@ -49,6 +52,7 @@ export function migrateState(
 			strengthPotionWhenLosing: legacyPolicy?.strengthPotionWhenLosing ?? false,
 		},
 		combatBuffs: legacyBuffs ?? [],
+		pausedActions: legacyPaused ?? [],
 		eventRng: legacyEventRng ?? {
 			seed: ((state.rng?.seed ?? 0) ^ EVENT_RNG_SALT) >>> 0,
 			counter: 0,
@@ -99,6 +103,7 @@ export function createInitialState(
 		inventory: {},
 		skills: createSkills(),
 		activeAction: null,
+		pausedActions: [],
 		activeEvents: [],
 		health: { hp: 100, maxHp: 100 },
 		upgrades: {},

@@ -66,6 +66,7 @@ function snapshot(state: GameState, content: GameContent, now: number) {
 		inventory: state.inventory,
 		skills: state.skills,
 		activeAction: state.activeAction,
+		pausedActions: state.pausedActions ?? [],
 		activeEvents: state.activeEvents,
 		upgrades: state.upgrades,
 		prestige: state.prestige,
@@ -105,10 +106,10 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_action",
 		title: "Действие",
 		description:
-			"Управление активным действием: start (собрать/сварить/атаковать), cancel, status.",
+			"Управление активным действием: start (собрать/сварить/атаковать), cancel (отложить, прогресс сохраняется), discard (выбросить отложенное), status.",
 		scopes: ["play"],
 		inputSchema: z.object({
-			command: z.enum(["start", "cancel", "status"]),
+			command: z.enum(["start", "cancel", "discard", "status"]),
 			kind: z.enum(["gather", "craft", "fight"]).optional(),
 			skill: z.string().optional(),
 			targetId: z.string().optional(),
@@ -125,7 +126,22 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			if (command === "cancel") {
 				const result = await games.cancelAction(context.playerId);
 				if (result.isErr()) return errorResultFromDomain(result.error);
-				return jsonResult(result.value.state.activeAction);
+				return jsonResult({
+					activeAction: result.value.state.activeAction,
+					pausedActions: result.value.state.pausedActions ?? [],
+				});
+			}
+			if (command === "discard") {
+				const target = args.targetId ? String(args.targetId) : undefined;
+				const result = await games.discardPausedActions(
+					context.playerId,
+					target,
+				);
+				if (result.isErr()) return errorResultFromDomain(result.error);
+				return jsonResult({
+					activeAction: result.value.state.activeAction,
+					pausedActions: result.value.state.pausedActions ?? [],
+				});
 			}
 			if (command !== "start") {
 				return errorResult(`UnknownCommand: неизвестная команда "${command}".`);
