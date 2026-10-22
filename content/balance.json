@@ -55,8 +55,8 @@
 	"prestigeGoldExponent": 0.2,
 	"eventChancePerMinute": 0.02,
 	"playerMaxHp": 100,
-	"playerMaxHpPerCombatLevel": 10,
-	"playerHealthRegenPerSec": 1,
+	"playerMaxHpPerCombatLevel": 30,
+	"playerHealthRegenPerSec": 5,
 	"potionHealthHealPercent": 0.5,
 	"playerDamageBase": 1,
 	"playerDamagePerLevel": 0.5
