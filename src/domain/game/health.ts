@@ -9,6 +9,7 @@ import {
 } from "../shared/result.ts";
 
 import type { DomainError } from "../shared/errors.ts";
+import { applyBuffItem, isBuffItem } from "./buffs.ts";
 
 export const DEFAULT_HEALTH_REGEN_PER_SEC = 1;
 export const DEFAULT_POTION_HEAL_PERCENT = 0.5;
@@ -41,6 +42,11 @@ export function potionHealAmount(content: GameContent, maxHp: number): number {
 	const percent =
 		content.balance.potionHealthHealPercent ?? DEFAULT_POTION_HEAL_PERCENT;
 	return Math.max(1, Math.round(maxHp * percent));
+}
+
+export function healToFull(state: GameState, content: GameContent): GameState {
+	const maxHp = maxHpFor(state, content);
+	return { ...state, health: { hp: maxHp, maxHp } };
 }
 
 export function consumePotion(
@@ -77,16 +83,21 @@ export function useItem(
 ): Result<GameState, DomainError> {
 	const item = content.items.find((entry) => entry.id === itemId);
 	if (!item) return itemUnknown(itemId);
+	const available = state.inventory[itemId] ?? 0;
+	if (available <= 0) {
+		return notEnoughResources(itemId, 1, available);
+	}
+	if (isBuffItem(item.id)) {
+		const buffed = applyBuffItem(state, content, item.id);
+		const next = item.id === "elixir" ? healToFull(buffed, content) : buffed;
+		return ok({ ...next, updatedAt: now });
+	}
 	if (item.id !== "potion_health") {
 		return err({
 			code: "NotSupported",
 			message: `Предмет "${item.id}" нельзя использовать.`,
 			feature: `use:${item.id}`,
 		});
-	}
-	const available = state.inventory[itemId] ?? 0;
-	if (available <= 0) {
-		return notEnoughResources(itemId, 1, available);
 	}
 	const maxHp = maxHpFor(state, content);
 	if (state.health.hp >= maxHp) {

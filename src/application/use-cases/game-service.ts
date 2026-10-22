@@ -15,6 +15,7 @@ import {
 	type CombatPolicyPatch,
 } from "../../domain/game/combat.ts";
 import { maxHpFor } from "../../domain/game/health.ts";
+import { pendingBuffMultiplier } from "../../domain/game/buffs.ts";
 import type {
 	GameEvent,
 	GameState,
@@ -276,6 +277,9 @@ export class GameService {
 		const monster = content.monsters.find((entry) => entry.id === targetId);
 		if (!monster) return ok(null);
 		const sameFight = fighting?.targetId === monster.id;
+		const multiplier = sameFight
+			? (fighting?.damageMultiplier ?? 1)
+			: pendingBuffMultiplier(state);
 		return ok(
 			forecastCombat({
 				monster,
@@ -283,7 +287,7 @@ export class GameService {
 				nextMonsterHitInSec: sameFight
 					? fighting.monsterHitInSec
 					: monster.attackInterval,
-				playerDps: playerDpsFor(state, content),
+				playerDps: playerDpsFor(state, content, multiplier),
 				playerHp: state.health.hp,
 				playerMaxHp: maxHpFor(state, content),
 			}),

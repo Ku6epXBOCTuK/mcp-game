@@ -5,6 +5,7 @@ export const DEFAULT_COMBAT_POLICY: CombatPolicy = {
 	potionAtHpPercent: null,
 	fleeAtHpPercent: null,
 	autoRepeat: false,
+	strengthPotionWhenLosing: false,
 };
 
 export type CombatState = {
@@ -60,18 +61,23 @@ export function startCombat(monster: MonsterContent): CombatState {
 
 // NOTE: the forecast ignores temporary event skill bonuses, so it stays a
 // conservative plan: the real damage is never lower than the forecast.
-export function playerDpsFor(state: GameState, content: GameContent): number {
+export function playerDpsFor(
+	state: GameState,
+	content: GameContent,
+	damageMultiplier = 1,
+): number {
 	const level = state.skills.combat?.level ?? 1;
-	return (
+	const base =
 		content.balance.playerDamageBase +
-		content.balance.playerDamagePerLevel * level
-	);
+		content.balance.playerDamagePerLevel * level;
+	return base * damageMultiplier;
 }
 
 export type CombatPolicyPatch = {
 	potionAtHpPercent?: number | null | undefined;
 	fleeAtHpPercent?: number | null | undefined;
 	autoRepeat?: boolean | undefined;
+	strengthPotionWhenLosing?: boolean | undefined;
 };
 
 function clampPercent(value: number): number {
@@ -99,6 +105,10 @@ export function updateCombatPolicy(
 					? null
 					: clampPercent(patch.fleeAtHpPercent),
 		autoRepeat: patch.autoRepeat ?? current.autoRepeat,
+		strengthPotionWhenLosing:
+			patch.strengthPotionWhenLosing ??
+			current.strengthPotionWhenLosing ??
+			false,
 	};
 	return { ...state, combatPolicy: next, updatedAt: now };
 }
@@ -140,7 +150,13 @@ export function advanceCombat(input: CombatInput): CombatResult {
 	while (remaining > 0) {
 		const timeToKill =
 			input.playerDps > 0 ? monsterHp / input.playerDps : Infinity;
-		if (Number.isFinite(timeToKill) && timeToKill <= hitIn) {
+		// NOTE: the kill must fit into the window, otherwise the fight only
+		// continues: a tie with the monster hit still goes to the player.
+		if (
+			Number.isFinite(timeToKill) &&
+			timeToKill <= hitIn &&
+			timeToKill <= remaining
+		) {
 			return {
 				outcome: "victory",
 				combat: { monsterHpLeft: 0, monsterHitInSec: hitIn },

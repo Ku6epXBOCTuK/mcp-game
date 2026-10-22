@@ -267,6 +267,15 @@ test("the auto repeat policy chains kills inside one tick", () => {
 	assert.equal(after.activeAction?.kind, "fight");
 });
 
+test("a kill that does not fit into the window does not end the fight", () => {
+	const after = runFight(fightAction("squire"), 6, 6);
+	assert.equal(after.counters.killed.squire, undefined);
+	assert.equal(after.activeAction?.kind, "fight");
+	if (after.activeAction?.kind !== "fight") return;
+	assert.equal(after.activeAction.monsterHpLeft, 20);
+	assert.equal(after.health.hp, 90);
+});
+
 test("a legacy fight action is migrated to the timeline model", () => {
 	const legacy = {
 		...createInitialState("p1", 42, 1000),

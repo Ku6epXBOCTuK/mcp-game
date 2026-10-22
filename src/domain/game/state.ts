@@ -1,5 +1,6 @@
 import {
 	SKILL_IDS,
+	type CombatBuff,
 	type CombatPolicy,
 	type GameState,
 	type Inventory,
@@ -13,7 +14,7 @@ import {
 import { DEFAULT_COMBAT_POLICY, startCombat } from "./combat.ts";
 import type { GameContent } from "../content/types.ts";
 
-export const STATE_VERSION = 6;
+export const STATE_VERSION = 7;
 
 const EVENT_RNG_SALT = 0x9e3779b9;
 
@@ -28,6 +29,7 @@ export function migrateState(
 	};
 	const legacyPolicy = (state as { combatPolicy?: CombatPolicy }).combatPolicy;
 	const legacyEventRng = (state as { eventRng?: RngState }).eventRng;
+	const legacyBuffs = (state as { combatBuffs?: CombatBuff[] }).combatBuffs;
 	const legacyCounters = state.counters as {
 		gathered: Record<string, number>;
 		crafted: Record<string, number>;
@@ -41,7 +43,12 @@ export function migrateState(
 			totalGoldEarned: legacyStats.totalGoldEarned,
 			deaths: legacyStats.deaths ?? 0,
 		},
-		combatPolicy: legacyPolicy ?? { ...DEFAULT_COMBAT_POLICY },
+		combatPolicy: {
+			...DEFAULT_COMBAT_POLICY,
+			...(legacyPolicy ?? {}),
+			strengthPotionWhenLosing: legacyPolicy?.strengthPotionWhenLosing ?? false,
+		},
+		combatBuffs: legacyBuffs ?? [],
 		eventRng: legacyEventRng ?? {
 			seed: ((state.rng?.seed ?? 0) ^ EVENT_RNG_SALT) >>> 0,
 			counter: 0,
@@ -70,6 +77,7 @@ export function migrateState(
 				endsAt: action.endsAt,
 				monsterHpLeft: Math.max(0, (monster?.hp ?? 0) - legacyProgress),
 				monsterHitInSec: monster ? startCombat(monster).monsterHitInSec : 1,
+				damageMultiplier: action.damageMultiplier ?? 1,
 			},
 		};
 	}
@@ -101,6 +109,7 @@ export function createInitialState(
 		counters: { gathered: {}, crafted: {}, craftedItems: {}, killed: {} },
 		stats: { totalGoldEarned: 0, deaths: 0 },
 		combatPolicy: { ...DEFAULT_COMBAT_POLICY },
+		combatBuffs: [],
 		rng: { seed, counter: 0 },
 		eventRng: { seed: (seed ^ EVENT_RNG_SALT) >>> 0, counter: 0 },
 	};

@@ -64,14 +64,21 @@ export type FightAction = {
 	endsAt: number;
 	monsterHpLeft: number;
 	monsterHitInSec: number;
+	damageMultiplier?: number;
 };
 
 export type ActiveAction = GatherAction | CraftAction | FightAction;
+
+export type CombatBuff = {
+	id: ItemId;
+	damageMultiplier: number;
+};
 
 export type CombatPolicy = {
 	potionAtHpPercent: number | null;
 	fleeAtHpPercent: number | null;
 	autoRepeat: boolean;
+	strengthPotionWhenLosing?: boolean;
 };
 
 export type UpgradeLevels = Record<UpgradeId, number>;
@@ -154,6 +161,7 @@ export type GameState = {
 	counters: GameCounters;
 	stats: GameStats;
 	combatPolicy: CombatPolicy;
+	combatBuffs: CombatBuff[];
 	rng: RngState;
 	eventRng: RngState;
 };

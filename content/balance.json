@@ -62,5 +62,7 @@
 	"playerHealthRegenPerSec": 5,
 	"potionHealthHealPercent": 0.5,
 	"playerDamageBase": 1,
-	"playerDamagePerLevel": 0.5
+	"playerDamagePerLevel": 0.5,
+	"potionStrengthDamageMultiplier": 1.5,
+	"elixirDamageMultiplier": 2.0
 }

@@ -144,6 +144,8 @@ export type BalanceContent = {
 	potionHealthHealPercent?: number | undefined;
 	playerDamageBase: number;
 	playerDamagePerLevel: number;
+	potionStrengthDamageMultiplier?: number | undefined;
+	elixirDamageMultiplier?: number | undefined;
 };
 
 export type GameContent = {

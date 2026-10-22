@@ -16,9 +16,17 @@ import {
 } from "../shared/result.ts";
 import type { GameContent } from "../content/types.ts";
 import { creditLimit } from "./bank.ts";
+import {
+	DEFAULT_COMBAT_POLICY,
+	forecastCombat,
+	playerDpsFor,
+} from "./combat.ts";
+import { applyBuffItem, buffDamageMultiplier, buffEffect } from "./buffs.ts";
+import { healToFull, maxHpFor } from "./health.ts";
 import { questCompleted } from "./quests.ts";
 import type {
 	ActiveAction,
+	CombatBuff,
 	FightAction,
 	GameState,
 	ItemId,
@@ -144,6 +152,43 @@ export function startAction(
 			}
 		}
 	}
+	const policy = state.combatPolicy ?? DEFAULT_COMBAT_POLICY;
+	const baseDps = playerDpsFor(state, content);
+	const maxHp = maxHpFor(state, content);
+	const canWinWith = (dps: number, hp: number): boolean =>
+		forecastCombat({
+			monster,
+			monsterHpLeft: monster.hp,
+			nextMonsterHitInSec: monster.attackInterval,
+			playerDps: dps,
+			playerHp: hp,
+			playerMaxHp: maxHp,
+		}).canWin;
+
+	let next = state;
+	let buffs: CombatBuff[] = [...(state.combatBuffs ?? [])];
+	if (policy.strengthPotionWhenLosing) {
+		const current = baseDps * buffDamageMultiplier(buffs);
+		if (!canWinWith(current, state.health.hp)) {
+			for (const itemId of ["elixir", "potion_strength"]) {
+				if ((state.inventory[itemId] ?? 0) <= 0) continue;
+				const effect = buffEffect(content, itemId);
+				if (!effect) continue;
+				const candidate: CombatBuff[] = [
+					...buffs,
+					{ id: itemId, damageMultiplier: effect.damageMultiplier },
+				];
+				const withItem = applyBuffItem(next, content, itemId);
+				const hp = itemId === "elixir" ? maxHp : withItem.health.hp;
+				if (!canWinWith(baseDps * buffDamageMultiplier(candidate), hp)) {
+					continue;
+				}
+				next = itemId === "elixir" ? healToFull(withItem, content) : withItem;
+				buffs = candidate;
+				break;
+			}
+		}
+	}
 	const action: FightAction = {
 		kind: "fight",
 		skill: "combat",
@@ -153,8 +198,9 @@ export function startAction(
 		monsterHpLeft: monster.hp,
 		monsterHitInSec:
 			monster.attackInterval > 0 ? monster.attackInterval : Infinity,
+		damageMultiplier: buffDamageMultiplier(buffs),
 	};
-	return ok({ ...state, activeAction: action, updatedAt: now });
+	return ok({ ...next, combatBuffs: [], activeAction: action, updatedAt: now });
 }
 
 export function cancelAction(

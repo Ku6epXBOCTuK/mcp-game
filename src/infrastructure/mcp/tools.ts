@@ -50,7 +50,7 @@ function activeForecast(state: GameState, content: GameContent) {
 		monster,
 		monsterHpLeft: action.monsterHpLeft,
 		nextMonsterHitInSec: action.monsterHitInSec,
-		playerDps: playerDpsFor(state, content),
+		playerDps: playerDpsFor(state, content, action.damageMultiplier ?? 1),
 		playerHp: state.health.hp,
 		playerMaxHp: maxHpFor(state, content),
 	});
@@ -73,6 +73,7 @@ function snapshot(state: GameState, content: GameContent, now: number) {
 		counters: state.counters,
 		stats: state.stats,
 		combatPolicy: state.combatPolicy,
+		combatBuffs: state.combatBuffs ?? [],
 		combat: activeForecast(state, content),
 		marketUpdatedAt: state.market.updatedAt,
 	};
@@ -252,7 +253,10 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		title: "Использовать предмет",
 		description:
 			"Выпить зелье здоровья (itemId=potion_health): восстанавливает HP, бой не прерывается. " +
-			"Пей зелье, когда HP падает, иначе бой закончится смертью.",
+			"Пей зелье, когда HP падает, иначе бой закончится смертью. " +
+			"Зелье силы (itemId=potion_strength) и эликсир (itemId=elixir) дают усиленный урон: " +
+			"они действуют на текущий бой, а если боя нет — на следующий. " +
+			"Эликсир заодно полностью восстанавливает HP.",
 		scopes: ["play"],
 		inputSchema: z.object({
 			itemId: z.string(),
@@ -265,6 +269,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 				itemId,
 				health: result.value.state.health,
 				inventory: result.value.state.inventory,
+				combatBuffs: result.value.state.combatBuffs ?? [],
 			});
 		},
 	};
@@ -303,7 +308,8 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		description:
 			"Карта зон и монстров со статами; fight — начать бой с монстром; " +
 			"forecast — прогноз боя (сколько секунд до убийства, до смерти, можно ли победить); " +
-			"policy — правила боя для афк-режима: когда пить зелье, когда отступать, повторять ли бой.",
+			"policy — правила боя для афк-режима: когда пить зелье, когда отступать, повторять ли бой, " +
+			"пить ли зелье силы, когда бой проигрывается.",
 		scopes: ["read", "play"],
 		inputSchema: z.object({
 			command: z.enum(["map", "fight", "forecast", "policy"]).default("map"),
@@ -311,6 +317,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			potionAtHpPercent: z.number().min(0).max(100).nullable().optional(),
 			fleeAtHpPercent: z.number().min(0).max(100).nullable().optional(),
 			autoRepeat: z.boolean().optional(),
+			strengthPotionWhenLosing: z.boolean().optional(),
 		}),
 		handler: async (args, context) => {
 			const command = String(args.command ?? "map");
@@ -338,6 +345,10 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 					fleeAtHpPercent: optionalPercent(args.fleeAtHpPercent),
 					autoRepeat:
 						typeof args.autoRepeat === "boolean" ? args.autoRepeat : undefined,
+					strengthPotionWhenLosing:
+						typeof args.strengthPotionWhenLosing === "boolean"
+							? args.strengthPotionWhenLosing
+							: undefined,
 				};
 				const result = await games.setCombatPolicy(context.playerId, patch);
 				if (result.isErr()) return errorResultFromDomain(result.error);

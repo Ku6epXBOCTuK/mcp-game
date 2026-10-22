@@ -259,7 +259,8 @@ function applyFight(
 	);
 	const maxHp = maxHpFor(state, content);
 	const dps =
-		balance.playerDamageBase + balance.playerDamagePerLevel * combatLevel;
+		(balance.playerDamageBase + balance.playerDamagePerLevel * combatLevel) *
+		(action.damageMultiplier ?? 1);
 	const policy = state.combatPolicy ?? DEFAULT_COMBAT_POLICY;
 	const potionHeal = potionHealAmount(content, maxHp);
 
