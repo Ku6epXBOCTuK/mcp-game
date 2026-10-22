@@ -1,4 +1,19 @@
 {
+	"upgradeCostScale": {
+		"axe": 0.5,
+		"pickaxe": 0.5,
+		"forge": 0.5,
+		"campfire": 0.5,
+		"logging_camp": 0.5,
+		"quarry": 0.5,
+		"farm": 0.5,
+		"alchemy_lab": 0.5,
+		"bank": 0.5,
+		"auction": 0.5,
+		"teleport": 0.5,
+		"tent": 0.5
+	},
+	"prestigeGoldThreshold": 974,
 	"skillRateK": 0.1,
 	"xpBase": 15,
 	"xpExponent": 1.4,
@@ -10,14 +25,14 @@
 	"maxTickPerDaySec": 86400,
 	"offlineCapSec": 43200,
 	"rateBase": {
-		"chopping": 1,
-		"mining": 0.9,
-		"hunting": 0.8,
-		"crafting": 0.6,
-		"cooking": 0.5,
-		"trading": 0.4,
-		"combat": 0.7,
-		"magic": 0.3
+		"chopping": 2,
+		"mining": 1.8,
+		"hunting": 1.6,
+		"crafting": 1.2,
+		"cooking": 1,
+		"trading": 0.8,
+		"combat": 1.4,
+		"magic": 0.6
 	},
 	"costGrowth": {
 		"axe": 1.15,

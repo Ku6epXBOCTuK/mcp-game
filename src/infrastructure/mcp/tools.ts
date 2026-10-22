@@ -2,7 +2,8 @@ import { z } from "zod";
 import type { GameService } from "../../application/use-cases/game-service.ts";
 import type { GameState } from "../../domain/game/types.ts";
 import type { SkillId } from "../../domain/game/types.ts";
-import { upgradeCost, xpToNext } from "../../domain/shared/curves.ts";
+import { xpToNext } from "../../domain/shared/curves.ts";
+import { upgradePrice } from "../../domain/game/actions.ts";
 import {
 	errorResult,
 	errorResultFromDomain,
@@ -57,7 +58,9 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		handler: async (_args, context) => {
 			const result = await games.getState(context.playerId);
 			if (result.isErr()) return errorResultFromDomain(result.error);
-			return jsonResult(snapshot(result.value.state, Date.now()));
+			return jsonResult(
+				snapshot(result.value.state, Math.floor(Date.now() / 1000)),
+			);
 		},
 	};
 
@@ -163,8 +166,6 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			const { state, content } = contextResult.value;
 			const list = content.upgrades.map((upgrade) => {
 				const level = state.upgrades[upgrade.id] ?? 0;
-				const growth =
-					content.balance.costGrowth[upgrade.id] ?? upgrade.costGrowth;
 				return {
 					id: upgrade.id,
 					name: upgrade.name,
@@ -173,7 +174,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 					nextCost:
 						level >= upgrade.maxLevel
 							? null
-							: Math.ceil(upgradeCost(upgrade.costBase, growth, level)),
+							: upgradePrice(content, upgrade.id, level),
 					effect: upgrade.effect,
 				};
 			});

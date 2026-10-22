@@ -147,6 +147,18 @@ export function describeAction(action: ActiveAction): string {
 	return `${action.kind}:${action.targetId}`;
 }
 
+export function upgradePrice(
+	content: GameContent,
+	upgradeId: UpgradeId,
+	level: number,
+): number {
+	const upgrade = content.upgrades.find((entry) => entry.id === upgradeId);
+	if (!upgrade) return 0;
+	const growth = content.balance.costGrowth[upgradeId] ?? upgrade.costGrowth;
+	const scale = content.balance.upgradeCostScale?.[upgradeId] ?? 1;
+	return Math.ceil(upgradeCost(upgrade.costBase * scale, growth, level));
+}
+
 export function buyUpgrade(
 	state: GameState,
 	content: GameContent,
@@ -166,8 +178,7 @@ export function buyUpgrade(
 	if (level >= upgrade.maxLevel) {
 		return upgradeMaxLevel(upgradeId, upgrade.maxLevel);
 	}
-	const growth = content.balance.costGrowth[upgradeId] ?? upgrade.costGrowth;
-	const cost = Math.ceil(upgradeCost(upgrade.costBase, growth, level));
+	const cost = upgradePrice(content, upgradeId, level);
 	if (state.wallet.gold < cost) {
 		return insufficientFunds(cost, state.wallet.gold);
 	}

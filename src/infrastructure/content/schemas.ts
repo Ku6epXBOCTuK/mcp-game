@@ -171,6 +171,8 @@ export const eventSchema = z.object({
 }) satisfies z.ZodType<EventContent>;
 
 export const balanceSchema = z.object({
+	upgradeCostScale: z.record(z.string(), z.number().positive()).optional(),
+	prestigeGoldThreshold: z.number().positive().optional(),
 	skillRateK: z.number().min(0),
 	xpBase: z.number().positive(),
 	xpExponent: z.number().positive(),

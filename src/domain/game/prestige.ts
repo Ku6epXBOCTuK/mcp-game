@@ -11,13 +11,24 @@ export type PrestigePreview = {
 	productionMultiplier: number;
 };
 
-export function prestigePoints(totalGoldEarned: number): number {
+export const DEFAULT_PRESTIGE_GOLD_THRESHOLD = 1000;
+
+export function prestigePoints(
+	totalGoldEarned: number,
+	threshold = DEFAULT_PRESTIGE_GOLD_THRESHOLD,
+): number {
 	if (totalGoldEarned <= 0) return 0;
-	return Math.floor(Math.sqrt(totalGoldEarned / 1000));
+	if (threshold <= 0) return 0;
+	return Math.floor(Math.sqrt(totalGoldEarned / threshold));
 }
 
-export function previewPrestige(state: GameState): PrestigePreview {
-	const points = prestigePoints(state.stats.totalGoldEarned);
+export function previewPrestige(
+	state: GameState,
+	content: GameContent,
+): PrestigePreview {
+	const threshold =
+		content.balance.prestigeGoldThreshold ?? DEFAULT_PRESTIGE_GOLD_THRESHOLD;
+	const points = prestigePoints(state.stats.totalGoldEarned, threshold);
 	const layers = state.prestige.layers + 1;
 	return {
 		points,
@@ -33,12 +44,13 @@ export function prestige(
 	content: GameContent,
 	now: number,
 ): Result<GameState, import("../shared/errors.ts").DomainError> {
-	const preview = previewPrestige(state);
+	const preview = previewPrestige(state, content);
 	if (preview.points <= 0) {
+		const threshold =
+			content.balance.prestigeGoldThreshold ?? DEFAULT_PRESTIGE_GOLD_THRESHOLD;
 		return err({
 			code: "NotSupported",
-			message:
-				"Престиж пока недоступен: нужно заработать хотя бы 1000 золота суммарно.",
+			message: `Престиж пока недоступен: нужно заработать хотя бы ${threshold} золота суммарно.`,
 			feature: "prestige",
 		});
 	}
@@ -66,6 +78,7 @@ export function prestige(
 		market: state.market,
 		bank: { deposits: 0, credit: 0, accruedAt: now },
 		counters: { gathered: {}, crafted: {}, killed: {} },
+		stats: { totalGoldEarned: 0 },
 		prestige: {
 			points: totalPoints,
 			layers: preview.layers,

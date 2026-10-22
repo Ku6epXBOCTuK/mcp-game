@@ -340,7 +340,7 @@ export class GameService {
 	async prestigePreview(playerId: PlayerId) {
 		const context = await this.loadContext(playerId);
 		if (context.isErr()) return err(context.error);
-		return ok(previewPrestige(context.value.state));
+		return ok(previewPrestige(context.value.state, context.value.content));
 	}
 
 	async marketPrices(playerId: PlayerId) {
@@ -362,18 +362,28 @@ export class GameService {
 	): Promise<UseCaseResult<GameContext>> {
 		const context = await this.loadContext(playerId);
 		if (context.isErr()) return err(context.error);
-		const now = this.clock.now() + Math.max(0, Math.floor(seconds)) * 1000;
-		const state = tick(context.value.state, {
+		const realNow = this.clock.now();
+		const future = realNow + Math.max(0, Math.floor(seconds));
+		const ticked = tick(context.value.state, {
 			content: context.value.content,
-			now,
+			now: future,
 		});
+		const state = {
+			...ticked,
+			lastTickAt: realNow,
+			updatedAt: realNow,
+			market: {
+				...ticked.market,
+				updatedAt: Math.min(ticked.market.updatedAt, realNow),
+			},
+		};
 		const next = {
 			...context.value,
 			state,
 			version: context.value.version + 1,
 		};
 		await this.commit(playerId, next, [
-			{ ts: now, type: "time.advanced", payload: { seconds } },
+			{ ts: realNow, type: "time.advanced", payload: { seconds } },
 		]);
 		return ok(next);
 	}

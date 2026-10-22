@@ -44,7 +44,7 @@ async function main(): Promise<void> {
 	const keys = new SqliteApiKeyRepository(db);
 	const service = new ApiKeyService(keys);
 	const args = parseArgs(process.argv.slice(2));
-	const now = Date.now();
+	const now = Math.floor(Date.now() / 1000);
 
 	if (args.command === "create") {
 		const existing = await players.list();

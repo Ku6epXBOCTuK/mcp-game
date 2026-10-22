@@ -4,7 +4,7 @@ export interface Clock {
 
 export function systemClock(): Clock {
 	return {
-		now: () => Date.now(),
+		now: () => Math.floor(Date.now() / 1000),
 	};
 }
 

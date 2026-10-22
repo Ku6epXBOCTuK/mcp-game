@@ -41,11 +41,11 @@ function fmt(value) {
 	return Math.round(value).toLocaleString("ru-RU");
 }
 
-function fmtTime(ms) {
-	const total = Math.max(0, Math.floor(ms / 1000));
+function fmtTime(sec) {
+	const total = Math.max(0, Math.floor(sec));
 	const min = Math.floor(total / 60);
-	const sec = total % 60;
-	return `${min} мин ${sec} с`;
+	const rest = total % 60;
+	return `${min} мин ${rest} с`;
 }
 
 function renderRows(tbody, rows) {
@@ -217,7 +217,7 @@ function render(data) {
 	}
 	for (const event of data.events) {
 		const line = document.createElement("div");
-		const when = new Date(event.ts).toLocaleTimeString("ru-RU");
+		const when = new Date(event.ts * 1000).toLocaleTimeString("ru-RU");
 		line.textContent = `${when} ${event.type} ${JSON.stringify(event.payload)}`;
 		feed.append(line);
 	}
