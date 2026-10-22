@@ -4,6 +4,7 @@ import { type Result, ok, err } from "neverthrow";
 import type { GameContent } from "../../domain/content/types.ts";
 import type { DomainError } from "../../domain/shared/errors.ts";
 import { contentInvalidError } from "../../domain/shared/result.ts";
+import type { ContentRepository } from "../../application/ports/content-repository.ts";
 import {
   balanceSchema,
   eventsFileSchema,
@@ -28,10 +29,6 @@ export type ContentFileName =
   | "quests.json"
   | "events.json"
   | "balance.json";
-
-export interface ContentRepository {
-  load(): Promise<Result<GameContent, DomainError>>;
-}
 
 const FILE_SCHEMAS = {
   "skills.json": skillsFileSchema,

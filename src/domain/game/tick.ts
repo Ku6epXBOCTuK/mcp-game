@@ -1,5 +1,6 @@
 import { productionRate, xpToNext } from "../shared/curves.ts";
 import { nextRandom } from "../shared/rng.ts";
+import { refreshMarket } from "./market.ts";
 import type { GameContent, EventContent } from "../content/types.ts";
 import type {
   ActiveAction,
@@ -90,7 +91,7 @@ function eventMultipliers(state: GameState, content: GameContent): Multipliers {
   return multipliers;
 }
 
-function gainXp(
+export function gainXp(
   state: GameState,
   skill: SkillId,
   amount: number,
@@ -176,6 +177,16 @@ function applyGather(
   let next = state;
   if (produced > 0) {
     next = addItem(next, action.targetId, produced);
+    next = {
+      ...next,
+      counters: {
+        ...next.counters,
+        gathered: {
+          ...next.counters.gathered,
+          [action.targetId]: (next.counters.gathered[action.targetId] ?? 0) + produced,
+        },
+      },
+    };
     next = gainXp(
       next,
       skill,
@@ -190,6 +201,33 @@ function applyGather(
   };
 }
 
+function maxCraftsByInputs(
+  state: GameState,
+  inputs: { item: string; qty: number }[],
+): number {
+  if (inputs.length === 0) return Number.POSITIVE_INFINITY;
+  let limit = Number.POSITIVE_INFINITY;
+  for (const input of inputs) {
+    const available = state.inventory[input.item] ?? 0;
+    limit = Math.min(limit, Math.floor(available / input.qty));
+  }
+  return Number.isFinite(limit) ? limit : 0;
+}
+
+function consumeInputs(
+  state: GameState,
+  recipe: GameContent["recipes"][number],
+  count: number,
+): GameState {
+  const inventory = { ...state.inventory };
+  for (const input of recipe.inputs) {
+    const left = (inventory[input.item] ?? 0) - input.qty * count;
+    if (left <= 0) delete inventory[input.item];
+    else inventory[input.item] = left;
+  }
+  return { ...state, inventory };
+}
+
 function applyCraft(
   state: GameState,
   action: ActiveAction,
@@ -202,10 +240,24 @@ function applyCraft(
   if (!recipe) return { ...state, activeAction: null };
   const before = action.progress;
   const after = before + elapsed;
-  const produced = Math.floor(after / recipe.timeSec) - Math.floor(before / recipe.timeSec);
+  const rawProduced =
+    Math.floor(after / recipe.timeSec) - Math.floor(before / recipe.timeSec);
+  const affordable = maxCraftsByInputs(state, recipe.inputs);
+  const produced = Math.min(rawProduced, affordable);
   let next = state;
   if (produced > 0) {
+    next = consumeInputs(next, recipe, produced);
     next = addItem(next, recipe.output.item, produced * recipe.output.qty);
+    next = {
+      ...next,
+      counters: {
+        ...next.counters,
+        crafted: {
+          ...next.counters.crafted,
+          [recipe.id]: (next.counters.crafted[recipe.id] ?? 0) + produced,
+        },
+      },
+    };
     next = gainXp(
       next,
       recipe.skill,
@@ -268,6 +320,16 @@ function applyFight(
       balance.xpExponent,
     );
     next = rollDrops(next, monster, random);
+    next = {
+      ...next,
+      counters: {
+        ...next.counters,
+        killed: {
+          ...next.counters.killed,
+          [monster.id]: (next.counters.killed[monster.id] ?? 0) + 1,
+        },
+      },
+    };
     return next;
   }
 
@@ -335,8 +397,10 @@ export function tick(state: GameState, options: TickOptions): GameState {
     }
   }
 
+  const withMarket = refreshMarket(next, content, now);
+
   return {
-    ...next,
+    ...withMarket,
     rng: rngState,
     lastTickAt: now,
     updatedAt: now,

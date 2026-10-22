@@ -81,6 +81,29 @@ export type Health = {
   maxHp: number;
 };
 
+export type MarketState = {
+  seed: number;
+  counter: number;
+  prices: Record<ItemId, number>;
+  updatedAt: number;
+};
+
+export type BankState = {
+  deposits: number;
+  credit: number;
+  accruedAt: number;
+};
+
+export type GameCounters = {
+  gathered: Record<ItemId, number>;
+  crafted: Record<RecipeId, number>;
+  killed: Record<MonsterId, number>;
+};
+
+export type GameStats = {
+  totalGoldEarned: number;
+};
+
 export type GameState = {
   version: number;
   playerId: PlayerId;
@@ -96,6 +119,10 @@ export type GameState = {
   upgrades: UpgradeLevels;
   prestige: PrestigeState;
   quests: QuestsState;
+  market: MarketState;
+  bank: BankState;
+  counters: GameCounters;
+  stats: GameStats;
   rng: RngState;
 };
 

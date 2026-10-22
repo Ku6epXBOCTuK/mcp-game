@@ -10,7 +10,7 @@ import {
   type UpgradeLevels,
 } from "./types.ts";
 
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 export function createInitialState(
   playerId: PlayerId,
@@ -32,6 +32,10 @@ export function createInitialState(
     upgrades: {},
     prestige: { points: 0, layers: 0, runs: 0, multipliers: {} },
     quests: {},
+    market: { seed, counter: 0, prices: {}, updatedAt: now },
+    bank: { deposits: 0, credit: 0, accruedAt: now },
+    counters: { gathered: {}, crafted: {}, killed: {} },
+    stats: { totalGoldEarned: 0 },
     rng: { seed, counter: 0 },
   };
 }
