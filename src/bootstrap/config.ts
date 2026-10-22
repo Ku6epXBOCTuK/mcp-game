@@ -28,12 +28,18 @@ export function loadConfig(): ServerConfig {
 	const root = resolve(import.meta.dirname, "..", "..");
 	const dataDir = resolve(envString("MCPG_DATA_DIR", resolve(root, "data")));
 	const dev = envString("MCPG_ENV", "development") !== "production";
+	const builtWeb = resolve(root, "dist", "web");
 	return {
 		dbPath: resolve(dataDir, "game.db"),
 		contentDir: resolve(
 			envString("MCPG_CONTENT_DIR", resolve(root, "content")),
 		),
-		publicDir: resolve(envString("MCPG_PUBLIC_DIR", resolve(root, "public"))),
+		publicDir: resolve(
+			envString(
+				"MCPG_PUBLIC_DIR",
+				existsSync(builtWeb) ? builtWeb : resolve(root, "web"),
+			),
+		),
 		host: envString("MCPG_HOST", "127.0.0.1"),
 		port: Number(envString("MCPG_PORT", "3000")),
 		dev,

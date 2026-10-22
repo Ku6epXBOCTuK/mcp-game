@@ -10,7 +10,7 @@ import type { GameState, QuestId, SkillId } from "./types.ts";
 import { questCompleted } from "./quests.ts";
 import { applyGoldIncome } from "./bank.ts";
 
-type DomainError = import("../shared/errors.ts").DomainError;
+import type { DomainError } from "../shared/errors.ts";
 
 export function claimQuest(
 	state: GameState,

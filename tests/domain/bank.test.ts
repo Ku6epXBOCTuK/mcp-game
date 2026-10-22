@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { bankOperation } from "../../src/domain/game/actions.ts";
 import {

@@ -15,7 +15,7 @@ const UINT32 = 0x100000000;
 const MULBERRY_INCREMENT = 0x6d2b79f5;
 
 export function mulberry32(seed: number, counter: number): number {
-	let a = (seed + Math.imul(counter + 1, MULBERRY_INCREMENT)) | 0;
+	const a = (seed + Math.imul(counter + 1, MULBERRY_INCREMENT)) | 0;
 	let t = Math.imul(a ^ (a >>> 15), 1 | a);
 	t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
 	return ((t ^ (t >>> 14)) >>> 0) / UINT32;

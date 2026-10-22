@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { SKILL_IDS, type GameState } from "../../src/domain/game/types.ts";
 import {

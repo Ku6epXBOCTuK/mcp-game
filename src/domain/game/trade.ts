@@ -10,7 +10,7 @@ import type { GameState, ItemId } from "./types.ts";
 import { marketBuyPrice, marketSellPrice } from "./market.ts";
 import { applyGoldIncome } from "./bank.ts";
 
-type DomainError = import("../shared/errors.ts").DomainError;
+import type { DomainError } from "../shared/errors.ts";
 
 export function sellItem(
 	state: GameState,

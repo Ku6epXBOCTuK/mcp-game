@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { openMemoryDatabase } from "../../src/infrastructure/persistence/database.ts";
@@ -143,7 +143,7 @@ async function sellAll(client: Client, itemId: string): Promise<number> {
 
 test("agent completes the full loop through MCP tools", async () => {
 	const db = openMemoryDatabase();
-	let clockNow = 1_000_000;
+	const clockNow = 1_000_000;
 	const service = new GameService({
 		games: new SqliteGameRepository(db),
 		players: new SqlitePlayerRepository(db),

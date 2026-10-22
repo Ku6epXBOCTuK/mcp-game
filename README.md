@@ -6,14 +6,15 @@
 игру через дебаг-страницу.
 
 Стек: Node.js 24, TypeScript (ESM, strict), чистая архитектура, `node:sqlite`,
-`@modelcontextprotocol/server`, `zod`, `neverthrow`.
+`@modelcontextprotocol/server`, `zod`, `neverthrow`, Vite (HMR дебаг-страницы),
+Vitest, ESLint, pnpm.
 
 ## Быстрый старт
 
 ```sh
-npm install
-npm run build
-npm start
+pnpm install
+pnpm build
+pnpm start
 ```
 
 Сервер поднимается на `http://127.0.0.1:3000` и создаёт дефолтного игрока. В
@@ -23,8 +24,10 @@ npm start
 - `http://127.0.0.1:3000/mcp` — точка входа MCP (Streamable HTTP);
 - `http://127.0.0.1:3000/` — дебаг-страница с состоянием игры.
 
-Для разработки: `npm run dev` (запуск TS напрямую через strip-types, с
-перезапуском при изменениях).
+Для разработки: `pnpm dev` — два процесса рядом: API-сервер на `3000`
+(`node --watch`, TS напрямую через strip-types) и Vite на `5173` с HMR.
+Дебаг-страница открывается на `http://127.0.0.1:5173/`, запросы `/api` и `/mcp`
+Vite проксирует на API-сервер. По отдельности: `pnpm dev:api` и `pnpm dev:web`.
 
 ## Подключение MCP-клиента
 
@@ -72,9 +75,9 @@ npm start
 ## Ключи
 
 ```sh
-npm run keys -- create --label "ноутбук"   # печатает ключ один раз
-npm run keys -- list                        # игроки и их ключи
-npm run keys -- revoke --id <key id>        # отзыв ключа
+pnpm run keys -- create --label "ноутбук"   # печатает ключ один раз
+pnpm run keys -- list                       # игроки и их ключи
+pnpm run keys -- revoke --id <key id>       # отзыв ключа
 ```
 
 Ключи нужны только при `MCPG_AUTH=keys`. В базе лежит только SHA-256 хэш ключа и
@@ -83,12 +86,12 @@ npm run keys -- revoke --id <key id>        # отзыв ключа
 
 ## Дебаг-страница
 
-`/` отдаёт статику из каталога `public/`: кошелёк, активное действие с
-прогрессом, скиллы, инвентарь, апгрейды с ценами и кнопкой «Купить», рынок,
-квесты, лента событий. Данные приходят из `GET /api/state`, действия — из
-`POST /api/action`. Страница обновляется раз в две секунды и показывает, чей это
-игрок. Ключ с правами `read` получает страницу без кнопок мутаций. При
-`MCPG_AUTH=off` поле ключа скрыто, а рядом горит метка «auth off».
+`/` отдаёт статику дебаг-страницы: кошелёк, активное действие с прогрессом,
+скиллы, инвентарь, апгрейды с ценами и кнопкой «Купить», рынок, квесты, лента
+событий. Данные приходят из `GET /api/state`, действия — из `POST /api/action`.
+Страница обновляется раз в две секунды и показывает, чей это игрок. Ключ с
+правами `read` получает страницу без кнопок мутаций. При `MCPG_AUTH=off` поле
+ключа скрыто, а рядом горит метка «auth off».
 
 ## Баланс и симулятор
 
@@ -97,8 +100,8 @@ npm run keys -- revoke --id <key id>        # отзыв ключа
 окупаемость апгрейдов, узкие места.
 
 ```sh
-npm run sim -- 24                     # прогон на 24 часа, печатает метрики
-npm run autotune                      # подбор кривых, пишет content/balance.json
+pnpm run sim -- 24                     # прогон на 24 часа, печатает метрики
+pnpm run autotune                      # подбор кривых, пишет content/balance.json
 ```
 
 Критерии баланса: апгрейд окупается за 3–15 минут, престиж доступен через 2–6
@@ -113,8 +116,8 @@ src/
   infrastructure/ node:sqlite, контент и zod-схемы, MCP-сервер, HTTP, симулятор
   bootstrap/      composition root, CLI ключей, симулятор, автотюн
 content/          данные игры: скиллы, предметы, рецепты, апгрейды, зоны, квесты
-public/           дебаг-страница
-tests/            node:test: домен, use cases, инфраструктура, интеграция, e2e
+web/              дебаг-страница: index.html, debug.js, style.css (корень Vite)
+tests/            vitest: домен, use cases, инфраструктура, интеграция, e2e
 ```
 
 Домен и application не знают про MCP, HTTP, SQLite и таймеры. `tick(state, now)`
@@ -129,16 +132,17 @@ tests/            node:test: домен, use cases, инфраструктура
 | `MCPG_HOST`        | `127.0.0.1`   | адрес привязки                        |
 | `MCPG_DATA_DIR`    | `./data`      | каталог файла базы                    |
 | `MCPG_CONTENT_DIR` | `./content`   | каталог данных игры                   |
-| `MCPG_PUBLIC_DIR`  | `./public`    | каталог статики дебаг-страницы        |
+| `MCPG_PUBLIC_DIR`  | `dist/web`    | каталог статики: сборка или `web/`    |
 | `MCPG_ENV`         | `development` | `production` отключает `?key=`        |
 | `MCPG_AUTH`        | по окружению  | `off` — без ключей, `keys` — по ключу |
 
 ## Проверки
 
 ```sh
-npm test        # node:test, без сети и без внешней БД
-npm run typecheck
-npm run build
+pnpm test        # vitest, без сети и без внешней БД
+pnpm run lint    # eslint
+pnpm run typecheck
+pnpm run build
 ```
 
 ## Лицензия и атрибуция

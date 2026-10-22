@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { startAction } from "../../src/domain/game/actions.ts";
 import { claimQuest } from "../../src/domain/game/quest-rewards.ts";

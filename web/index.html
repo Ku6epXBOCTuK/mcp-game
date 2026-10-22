@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>MCP Idle Game: дебаг</title>
+		<link rel="stylesheet" href="/style.css" />
+	</head>
+	<body>
+		<header>
+			<h1>MCP Idle Game: дебаг</h1>
+			<span id="player" class="tag">игрок не загружен</span>
+			<span id="dev-badge" class="tag dev" hidden>dev</span>
+			<span id="auth-badge" class="tag" hidden>auth off</span>
+			<span id="ro-badge" class="tag ro" hidden>только чтение</span>
+			<span id="status">загрузка…</span>
+			<input
+				id="key"
+				class="grow"
+				type="password"
+				placeholder="API-ключ (сохраняется в localStorage)"
+				autocomplete="off"
+			/>
+			<button id="reload" type="button">Обновить</button>
+		</header>
+
+		<main>
+			<section>
+				<h2>Кошелёк</h2>
+				<dl id="wallet"></dl>
+			</section>
+
+			<section>
+				<h2>Активное действие</h2>
+				<dl id="action"></dl>
+				<div class="bar" style="margin-top: 10px"><i id="action-bar"></i></div>
+				<div class="toolbar" style="margin-top: 12px">
+					<button id="pause" type="button">Пауза</button>
+					<button id="resume" type="button">Продолжить</button>
+					<input
+						id="seconds"
+						type="number"
+						min="1"
+						value="60"
+						style="width: 90px"
+					/>
+					<button id="advance" type="button">Продвинуть время</button>
+				</div>
+				<p class="note" id="tick-note"></p>
+			</section>
+
+			<section>
+				<h2>Скиллы</h2>
+				<table>
+					<thead>
+						<tr>
+							<th>Скилл</th>
+							<th class="num">Ур.</th>
+							<th class="num">XP</th>
+							<th class="num">До след.</th>
+						</tr>
+					</thead>
+					<tbody id="skills"></tbody>
+				</table>
+			</section>
+
+			<section>
+				<h2>Инвентарь</h2>
+				<table>
+					<thead>
+						<tr>
+							<th>Предмет</th>
+							<th class="num">Кол-во</th>
+						</tr>
+					</thead>
+					<tbody id="inventory"></tbody>
+				</table>
+			</section>
+
+			<section class="wide">
+				<h2>Апгрейды</h2>
+				<table>
+					<thead>
+						<tr>
+							<th>Апгрейд</th>
+							<th class="num">Ур.</th>
+							<th class="num">Цена</th>
+							<th>Эффект</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="upgrades"></tbody>
+				</table>
+			</section>
+
+			<section>
+				<h2>Рынок</h2>
+				<table>
+					<thead>
+						<tr>
+							<th>Предмет</th>
+							<th class="num">Продажа</th>
+							<th class="num">Покупка</th>
+						</tr>
+					</thead>
+					<tbody id="market"></tbody>
+				</table>
+			</section>
+
+			<section>
+				<h2>Квесты</h2>
+				<table>
+					<thead>
+						<tr>
+							<th>Квест</th>
+							<th>Статус</th>
+							<th class="num">Шаги</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="quests"></tbody>
+				</table>
+			</section>
+
+			<section class="wide">
+				<h2>Лента событий</h2>
+				<div id="feed"></div>
+			</section>
+		</main>
+
+		<script type="module" src="/debug.js"></script>
+	</body>
+</html>

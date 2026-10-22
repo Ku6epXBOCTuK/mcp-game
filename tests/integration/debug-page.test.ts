@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { openMemoryDatabase } from "../../src/infrastructure/persistence/database.ts";
@@ -13,7 +13,7 @@ import { createDebugRoute } from "../../src/infrastructure/http/debug-route.ts";
 import { createHttpServer } from "../../src/infrastructure/http/server.ts";
 
 const CONTENT_DIR = join(import.meta.dirname, "..", "..", "content");
-const PUBLIC_DIR = join(import.meta.dirname, "..", "..", "public");
+const PUBLIC_DIR = join(import.meta.dirname, "..", "..", "web");
 
 type Harness = {
 	base: string;
@@ -112,9 +112,9 @@ async function postAction(
 	return { status: response.status, body: await response.json() };
 }
 
-test("index page is served as html", async (t) => {
+test("index page is served as html", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const response = await fetch(`${harness.base}/`, {
 		headers: { connection: "close" },
 	});
@@ -126,9 +126,9 @@ test("index page is served as html", async (t) => {
 	await harness.close();
 });
 
-test("debug script is served", async (t) => {
+test("debug script is served", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const response = await fetch(`${harness.base}/debug.js`, {
 		headers: { connection: "close" },
 	});
@@ -140,9 +140,9 @@ test("debug script is served", async (t) => {
 	await harness.close();
 });
 
-test("state endpoint returns the player snapshot", async (t) => {
+test("state endpoint returns the player snapshot", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await getState(harness.base, key);
 	assert.equal(response.status, 200);
@@ -156,9 +156,9 @@ test("state endpoint returns the player snapshot", async (t) => {
 	await harness.close();
 });
 
-test("state endpoint falls back to the first player when auth is off", async (t) => {
+test("state endpoint falls back to the first player when auth is off", async () => {
 	const harness = await startHarness({ auth: "off" });
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	await harness.issue("p1", ["read"]);
 	const response = await getState(harness.base);
 	assert.equal(response.status, 200);
@@ -167,26 +167,26 @@ test("state endpoint falls back to the first player when auth is off", async (t)
 	await harness.close();
 });
 
-test("state endpoint requires a key when auth is keys", async (t) => {
+test("state endpoint requires a key when auth is keys", async () => {
 	const harness = await startHarness({ auth: "keys" });
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	await harness.issue("p1", ["read"]);
 	const response = await getState(harness.base);
 	assert.equal(response.status, 401);
 	await harness.close();
 });
 
-test("state endpoint rejects an unknown key", async (t) => {
+test("state endpoint rejects an unknown key", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const response = await getState(harness.base, `mcp_live_${"z".repeat(32)}`);
 	assert.equal(response.status, 403);
 	await harness.close();
 });
 
-test("read-only key cannot run actions", async (t) => {
+test("read-only key cannot run actions", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const key = await harness.issue("p1", ["read"]);
 	const response = await postAction(harness.base, key, {
 		command: "cancel",
@@ -196,9 +196,9 @@ test("read-only key cannot run actions", async (t) => {
 	await harness.close();
 });
 
-test("action endpoint starts and cancels an action", async (t) => {
+test("action endpoint starts and cancels an action", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const started = await postAction(harness.base, key, {
 		command: "start",
@@ -220,9 +220,9 @@ test("action endpoint starts and cancels an action", async (t) => {
 	await harness.close();
 });
 
-test("action endpoint reports domain errors", async (t) => {
+test("action endpoint reports domain errors", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await postAction(harness.base, key, {
 		command: "buy_upgrade",
@@ -233,18 +233,18 @@ test("action endpoint reports domain errors", async (t) => {
 	await harness.close();
 });
 
-test("action endpoint rejects unknown commands", async (t) => {
+test("action endpoint rejects unknown commands", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await postAction(harness.base, key, { command: "nope" });
 	assert.equal(response.status, 400);
 	await harness.close();
 });
 
-test("two players see different snapshots", async (t) => {
+test("two players see different snapshots", async () => {
 	const harness = await startHarness();
-	t.after(() => harness.close());
+	onTestFinished(() => harness.close());
 	const keyOne = await harness.issue("p1", ["read", "play"]);
 	const keyTwo = await harness.issue("p2", ["read", "play"]);
 	const one = await getState(harness.base, keyOne);

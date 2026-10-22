@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { openMemoryDatabase } from "../../src/infrastructure/persistence/database.ts";
 import { SqlitePlayerRepository } from "../../src/infrastructure/persistence/player-repository.ts";

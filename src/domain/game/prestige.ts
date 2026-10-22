@@ -2,6 +2,7 @@ import { type Result, ok, err } from "../shared/result.ts";
 import type { GameContent } from "../content/types.ts";
 import type { GameState } from "./types.ts";
 import { createSkills } from "./state.ts";
+import type { DomainError } from "../shared/errors.ts";
 
 export type PrestigePreview = {
 	points: number;
@@ -43,7 +44,7 @@ export function prestige(
 	state: GameState,
 	content: GameContent,
 	now: number,
-): Result<GameState, import("../shared/errors.ts").DomainError> {
+): Result<GameState, DomainError> {
 	const preview = previewPrestige(state, content);
 	if (preview.points <= 0) {
 		const threshold =

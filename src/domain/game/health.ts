@@ -8,7 +8,7 @@ import {
 	notEnoughResources,
 } from "../shared/result.ts";
 
-type DomainError = import("../shared/errors.ts").DomainError;
+import type { DomainError } from "../shared/errors.ts";
 
 export const DEFAULT_HEALTH_REGEN_PER_SEC = 1;
 export const DEFAULT_POTION_HEAL_PERCENT = 0.5;

@@ -27,7 +27,7 @@ import type {
 	UpgradeId,
 } from "./types.ts";
 
-type DomainError = import("../shared/errors.ts").DomainError;
+import type { DomainError } from "../shared/errors.ts";
 
 export type StartActionCommand =
 	| { kind: "gather"; skill: SkillId; targetId: string }
