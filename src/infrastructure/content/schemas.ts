@@ -185,6 +185,7 @@ export const balanceSchema = z.object({
 	tradingDiscountMax: z.number().min(0),
 	marketDriftRange: z.number().min(0),
 	marketDriftIntervalSec: z.number().int().min(1),
+	marketReversion: z.number().min(0).max(1).optional(),
 	maxTickSec: z.number().int().min(1),
 	maxTickPerDaySec: z.number().int().min(1),
 	offlineCapSec: z.number().int().min(1),

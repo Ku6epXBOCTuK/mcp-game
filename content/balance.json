@@ -24,6 +24,7 @@
 	"tradingDiscountMax": 0.4,
 	"marketDriftRange": 0.3,
 	"marketDriftIntervalSec": 300,
+	"marketReversion": 0.5,
 	"maxTickSec": 3600,
 	"maxTickPerDaySec": 86400,
 	"offlineCapSec": 43200,

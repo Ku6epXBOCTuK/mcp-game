@@ -127,6 +127,7 @@ export type BalanceContent = {
 	tradingDiscountMax: number;
 	marketDriftRange: number;
 	marketDriftIntervalSec: number;
+	marketReversion?: number | undefined;
 	maxTickSec: number;
 	maxTickPerDaySec: number;
 	offlineCapSec: number;
