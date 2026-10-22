@@ -62,7 +62,6 @@ export function prestige(
 		gold: 1 + totalPoints * 0.1,
 		production: 1 + totalPoints * 0.05,
 	};
-
 	return ok({
 		...state,
 		wallet: { gold: 0, credits: 0 },
@@ -75,10 +74,10 @@ export function prestige(
 			maxHp: content.balance.playerMaxHp,
 		},
 		upgrades: {},
-		quests: {},
+		quests: state.quests,
 		market: state.market,
 		bank: { deposits: 0, credit: state.bank.credit, accruedAt: now },
-		counters: { gathered: {}, crafted: {}, killed: {} },
+		counters: state.counters,
 		stats: { totalGoldEarned: 0, deaths: state.stats.deaths },
 		prestige: {
 			points: totalPoints,

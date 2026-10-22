@@ -49,14 +49,28 @@ export function questProgress(
 	quest: QuestContent,
 ): QuestProgress {
 	const steps = quest.steps.map((step) => stepProgress(state, step));
-	const completedSteps = steps.filter((entry) => entry.done).length;
 	const stored = state.quests[quest.id];
 	let status: QuestStatus = stored?.status ?? "available";
-	if (status !== "claimed") {
-		if (completedSteps === steps.length && steps.length > 0)
-			status = "completed";
-		else if (completedSteps > 0) status = "in-progress";
-		else status = "available";
+	if (status === "claimed") {
+		return {
+			quest,
+			status,
+			completedSteps: steps.length,
+			totalSteps: steps.length,
+			steps: steps.map((step) => ({
+				...step,
+				current: step.required,
+				done: true,
+			})),
+		};
+	}
+	const completedSteps = steps.filter((entry) => entry.done).length;
+	if (completedSteps === steps.length && steps.length > 0) {
+		status = "completed";
+	} else if (completedSteps > 0) {
+		status = "in-progress";
+	} else {
+		status = "available";
 	}
 	return {
 		quest,

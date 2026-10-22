@@ -146,7 +146,7 @@ export class GameService {
 				type: "action.started",
 				payload: {
 					kind: command.kind,
-					target: "targetId" in command ? command.targetId : "",
+					target: result.value.activeAction?.targetId ?? "",
 				},
 			},
 		]);

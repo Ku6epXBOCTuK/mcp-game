@@ -7,6 +7,7 @@ import {
 	PAYBACK_MIN_SEC,
 	PAYBACK_MAX_SEC,
 } from "../../src/domain/game/simulator.ts";
+import { questProgress } from "../../src/domain/game/quests.ts";
 
 const contentDir = join(import.meta.dirname, "..", "..", "content");
 
@@ -94,6 +95,20 @@ test("criteria reflect the measured metrics", async () => {
 			metrics.criteria.prestigeInRange &&
 			metrics.criteria.idleWithinLimit,
 	);
+});
+
+test("the simulator follows the quest chain instead of only fighting", async () => {
+	const content = await loadContent();
+	const { state, metrics } = simulate({
+		content,
+		durationSec: 12 * 3600,
+		seed: 5,
+	});
+	assert.ok((state.counters.gathered.wood ?? 0) >= 20);
+	assert.ok(Object.keys(state.counters.crafted).length > 0);
+	const first = questProgress(state, content.quests[0]);
+	assert.equal(first.status, "in-progress");
+	assert.ok(metrics.idleRatio <= 0.6);
 });
 
 test("a longer run never produces less income than a shorter one", async () => {

@@ -7,12 +7,13 @@ import {
 	buyUpgrade,
 	cancelAction,
 	upgradePrice,
+	type StartActionCommand,
 } from "./actions.ts";
 import { sellItem } from "./trade.ts";
 import { claimQuest } from "./quest-rewards.ts";
 import { prestige, previewPrestige } from "./prestige.ts";
 import { questProgress, questCompleted } from "./quests.ts";
-import { forecastCombat, playerDpsFor } from "./combat.ts";
+import { forecastCombat, playerDpsFor, type CombatForecast } from "./combat.ts";
 import { maxHpFor } from "./health.ts";
 
 export const PAYBACK_MIN_SEC = 3 * 60;
@@ -97,8 +98,6 @@ const RESOURCE_SKILL: Record<string, SkillId> = {
 	mushroom: "magic",
 	berry: "magic",
 };
-
-const SELL_BUFFER = 4;
 
 function skillOf(itemId: string): SkillId {
 	return RESOURCE_SKILL[itemId] ?? "chopping";
@@ -229,7 +228,10 @@ type FightPlan = {
 	monsterId: MonsterId;
 	seconds: number;
 	perMinute: number;
+	forecast: CombatForecast;
 };
+
+const MAX_FIGHT_SEC = 120;
 
 function monsterValue(content: GameContent, monsterId: string): number {
 	const monster = content.monsters.find((entry) => entry.id === monsterId);
@@ -242,47 +244,232 @@ function monsterValue(content: GameContent, monsterId: string): number {
 	return monster.xp * 4 + dropValue;
 }
 
+function fightPlan(
+	state: GameState,
+	content: GameContent,
+	monsterId: MonsterId,
+): FightPlan | null {
+	const monster = content.monsters.find((entry) => entry.id === monsterId);
+	if (!monster) return null;
+	const forecast = forecastCombat({
+		monster,
+		monsterHpLeft: monster.hp,
+		nextMonsterHitInSec: monster.attackInterval,
+		playerDps: playerDpsFor(state, content),
+		playerHp: state.health.hp,
+		playerMaxHp: maxHpFor(state, content),
+	});
+	if (forecast.timeToKillSec === null) return null;
+	return {
+		monsterId,
+		seconds: forecast.timeToKillSec,
+		perMinute: monsterValue(content, monsterId) / (forecast.timeToKillSec / 60),
+		forecast,
+	};
+}
+
+function safeMargin(forecast: CombatForecast): boolean {
+	if (forecast.timeToKillSec === null) return false;
+	const interval = forecast.monsterAttackInterval;
+	const hits = Math.max(0, Math.ceil(forecast.timeToKillSec / interval) - 1);
+	const taken = hits * forecast.monsterDamage;
+	return forecast.playerHp - taken >= forecast.playerMaxHp * 0.4;
+}
+
 function bestFight(state: GameState, content: GameContent): FightPlan | null {
-	const dps = playerDpsFor(state, content);
-	const maxHp = maxHpFor(state, content);
 	let best: FightPlan | null = null;
 	for (const monster of content.monsters) {
 		if (!zoneUnlocked(state, content, monster.zone)) continue;
-		const forecast = forecastCombat({
-			monster,
-			monsterHpLeft: monster.hp,
-			nextMonsterHitInSec: monster.attackInterval,
-			playerDps: dps,
-			playerHp: state.health.hp,
-			playerMaxHp: maxHp,
-		});
-		const seconds = forecast.timeToKillSec;
-		if (seconds === null || seconds > 120) continue;
-		if (!forecast.canWin) continue;
-		const hits = Math.floor(seconds / monster.attackInterval);
-		const incoming = hits * monster.damage;
-		if (incoming >= state.health.hp * 0.6) continue;
-		const perMinute = monsterValue(content, monster.id) / (seconds / 60);
-		if (!best || perMinute > best.perMinute) {
-			best = { monsterId: monster.id, seconds, perMinute };
+		const plan = fightPlan(state, content, monster.id);
+		if (!plan) continue;
+		if (plan.seconds > MAX_FIGHT_SEC) continue;
+		if (!plan.forecast.canWin) continue;
+		if (!safeMargin(plan.forecast)) continue;
+		if (!best || plan.perMinute > best.perMinute) {
+			best = plan;
 		}
 	}
 	return best;
 }
 
-function questFightTarget(
+type QuestPlan = {
+	questId: string;
+	kind: "gather" | "craft" | "fight";
+	targetId: string;
+	leveling: boolean;
+	skill?: SkillId | undefined;
+};
+
+function inputPlan(
 	state: GameState,
 	content: GameContent,
-): MonsterId | null {
+	itemId: string,
+	depth = 0,
+): { kind: "gather" | "craft"; targetId: string } | null {
+	for (const recipe of content.recipes) {
+		if (recipe.output.item !== itemId) continue;
+		if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) continue;
+		const missing = recipe.inputs.find(
+			(input) => (state.inventory[input.item] ?? 0) < input.qty,
+		);
+		if (!missing) return { kind: "craft", targetId: recipe.id };
+		if (depth < 2) {
+			const nested = inputPlan(state, content, missing.item, depth + 1);
+			if (nested) return nested;
+		}
+	}
+	const item = itemOf(content, itemId);
+	if (item && item.type === "resource") {
+		return { kind: "gather", targetId: itemId };
+	}
+	return null;
+}
+
+function gatherForSkill(
+	state: GameState,
+	content: GameContent,
+	skill: SkillId,
+): string | null {
+	let best: { itemId: string; perMinute: number } | null = null;
+	for (const item of content.items) {
+		if (item.type !== "resource") continue;
+		if (skillOf(item.id) !== skill) continue;
+		const perMinute = gatherGoldPerMinute(state, content, item.id);
+		if (perMinute <= 0) continue;
+		if (!best || perMinute > best.perMinute) {
+			best = { itemId: item.id, perMinute };
+		}
+	}
+	return best?.itemId ?? null;
+}
+
+function craftForSkill(
+	state: GameState,
+	content: GameContent,
+	skill: SkillId,
+): { kind: "gather" | "craft"; targetId: string } | null {
+	for (const recipe of content.recipes) {
+		if (recipe.skill !== skill) continue;
+		if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) continue;
+		const missing = recipe.inputs.find(
+			(input) => (state.inventory[input.item] ?? 0) < input.qty,
+		);
+		if (!missing) return { kind: "craft", targetId: recipe.id };
+		return inputPlan(state, content, missing.item);
+	}
+	return null;
+}
+
+function goalRecipeForSkill(
+	state: GameState,
+	content: GameContent,
+	skill: SkillId,
+): string | null {
+	for (const recipe of content.recipes) {
+		if (recipe.skill !== skill) continue;
+		if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) continue;
+		return recipe.id;
+	}
+	return null;
+}
+
+function skillPlan(
+	state: GameState,
+	content: GameContent,
+	skill: SkillId,
+): { kind: "gather" | "craft"; targetId: string; skill: SkillId } | null {
+	const craft = craftForSkill(state, content, skill);
+	if (craft) return { ...craft, skill };
+	const itemId = gatherForSkill(state, content, skill);
+	if (itemId) return { kind: "gather", targetId: itemId, skill };
+	return null;
+}
+
+function questStepPlan(
+	state: GameState,
+	content: GameContent,
+	quest: GameContent["quests"][number],
+): QuestPlan | null {
+	const progress = questProgress(state, quest);
+	for (const entry of progress.steps) {
+		if (entry.done) continue;
+		const step = entry.step;
+		if (step.kind === "collect") {
+			const item = itemOf(content, step.target);
+			if (!item) return null;
+			if (item.type === "resource") {
+				return {
+					questId: quest.id,
+					kind: "gather",
+					targetId: item.id,
+					leveling: false,
+				};
+			}
+			const recipe = content.recipes.find(
+				(candidate) => candidate.output.item === step.target,
+			);
+			if (!recipe) return null;
+			return {
+				questId: quest.id,
+				kind: "craft",
+				targetId: recipe.id,
+				leveling: false,
+			};
+		}
+		if (step.kind === "craft") {
+			const recipe = content.recipes.find(
+				(candidate) => candidate.id === step.target,
+			);
+			if (!recipe) return null;
+			if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) {
+				const skill = skillPlan(state, content, recipe.skill);
+				return skill ? { questId: quest.id, ...skill, leveling: true } : null;
+			}
+			const missing = recipe.inputs.find(
+				(input) => (state.inventory[input.item] ?? 0) < input.qty,
+			);
+			if (missing) {
+				const plan = inputPlan(state, content, missing.item);
+				return plan ? { questId: quest.id, ...plan, leveling: false } : null;
+			}
+			return {
+				questId: quest.id,
+				kind: "craft",
+				targetId: recipe.id,
+				leveling: false,
+			};
+		}
+		if (step.kind === "kill") {
+			const monster = content.monsters.find(
+				(candidate) => candidate.id === step.target,
+			);
+			if (!monster) return null;
+			if (!zoneUnlocked(state, content, monster.zone)) return null;
+			const plan = fightPlan(state, content, monster.id);
+			if (!plan || !plan.forecast.canWin) return null;
+			return {
+				questId: quest.id,
+				kind: "fight",
+				targetId: monster.id,
+				leveling: false,
+			};
+		}
+		if (step.kind === "level") {
+			const skill = step.target as SkillId;
+			const plan = skillPlan(state, content, skill);
+			return plan ? { questId: quest.id, ...plan, leveling: true } : null;
+		}
+		return null;
+	}
+	return null;
+}
+
+function questPlan(state: GameState, content: GameContent): QuestPlan | null {
 	for (const quest of content.quests) {
 		const status = state.quests[quest.id]?.status;
 		if (status === "claimed" || status === "completed") continue;
-		for (const step of quest.steps) {
-			if (step.kind !== "kill") continue;
-			const killed = state.counters.killed[step.target] ?? 0;
-			if (killed >= step.qty) continue;
-			return step.target;
-		}
+		const plan = questStepPlan(state, content, quest);
+		if (plan) return plan;
 	}
 	return null;
 }
@@ -332,16 +519,6 @@ function nextUpgrade(
 	return best;
 }
 
-function craftInputNeeds(content: GameContent): Map<string, number> {
-	const needs = new Map<string, number>();
-	for (const recipe of content.recipes) {
-		for (const input of recipe.inputs) {
-			needs.set(input.item, (needs.get(input.item) ?? 0) + input.qty);
-		}
-	}
-	return needs;
-}
-
 function median(values: number[]): number | null {
 	if (values.length === 0) return null;
 	const sorted = [...values].sort((a, b) => a - b);
@@ -370,7 +547,6 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 	let idleSec = 0;
 	let timeToPrestigeSec: number | null = null;
 	let prestigeRuns = 0;
-	const inputNeeds = craftInputNeeds(content);
 
 	for (let now = startAt; now < endAt; now += stepSec) {
 		const elapsedSec = now - startAt;
@@ -386,17 +562,37 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 
 		const plan = craftPlan(state, content);
 		const fight = bestFight(state, content);
-		const questTarget = questFightTarget(state, content);
+		const quest = questPlan(state, content);
 		const gather = bestGather(state, content);
 
-		if (state.activeAction && state.activeAction.kind === "gather" && gather) {
-			const active = state.activeAction;
+		const active = state.activeAction;
+		if (active && active.kind === "gather" && gather) {
 			const current = gatherGoldPerMinute(state, content, active.targetId);
+			const questKeeps =
+				quest !== null &&
+				quest.kind === "gather" &&
+				quest.targetId === active.targetId;
+			const questTakesOver =
+				quest !== null && quest.targetId !== active.targetId;
 			const better =
-				(plan ? plan.perMinute : 0) > current ||
-				(fight ? fight.perMinute : 0) > current ||
-				(questTarget !== null && questTarget !== active.targetId);
-			if (better) {
+				!questKeeps &&
+				((plan ? plan.perMinute : 0) > current ||
+					(fight ? fight.perMinute : 0) > current);
+			if (better || questTakesOver) {
+				const cancelled = cancelAction(state, now);
+				if (cancelled.isOk()) state = cancelled.value;
+			}
+		}
+		if (active && active.kind === "craft") {
+			const recipe = content.recipes.find(
+				(candidate) => candidate.id === active.targetId,
+			);
+			const stuck =
+				!recipe ||
+				recipe.inputs.some(
+					(input) => (state.inventory[input.item] ?? 0) < input.qty,
+				);
+			if (stuck) {
 				const cancelled = cancelAction(state, now);
 				if (cancelled.isOk()) state = cancelled.value;
 			}
@@ -408,7 +604,7 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 				content,
 				{
 					fight,
-					questTarget,
+					quest,
 					plan,
 					gather,
 				},
@@ -444,10 +640,13 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 		}
 
 		const preview = previewPrestige(state, content);
-		if (preview.points > 0) {
+		const leveling = quest !== null && quest.leveling;
+		if (preview.points > 0 && !leveling) {
+			const goldBefore = state.wallet.gold;
 			const result = prestige(state, content, now);
 			if (result.isOk()) {
 				state = result.value;
+				spent += goldBefore;
 				prestigeRuns += 1;
 				if (timeToPrestigeSec === null) timeToPrestigeSec = elapsedSec;
 			}
@@ -455,11 +654,38 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 
 		state = tick(state, { content, now });
 
+		const keepNeeds = new Map<string, number>();
+		const keepRecipe = (
+			recipeId: string | null | undefined,
+			depth = 0,
+		): void => {
+			if (!recipeId || depth > 2) return;
+			const recipe = content.recipes.find(
+				(candidate) => candidate.id === recipeId,
+			);
+			if (!recipe) return;
+			for (const input of recipe.inputs) {
+				keepNeeds.set(
+					input.item,
+					(keepNeeds.get(input.item) ?? 0) + input.qty * 2,
+				);
+				for (const producer of content.recipes) {
+					if (producer.output.item !== input.item) continue;
+					keepRecipe(producer.id, depth + 1);
+				}
+			}
+		};
+		keepRecipe(plan?.recipeId);
+		keepRecipe(quest && quest.kind === "craft" ? quest.targetId : null);
+		if (quest && quest.leveling && quest.skill) {
+			keepRecipe(goalRecipeForSkill(state, content, quest.skill));
+		}
+
 		for (const item of content.items) {
 			if (item.sellPrice <= 0) continue;
 			const qty = state.inventory[item.id] ?? 0;
 			if (qty <= 0) continue;
-			const keep = (inputNeeds.get(item.id) ?? 0) * SELL_BUFFER;
+			const keep = keepNeeds.get(item.id) ?? 0;
 			const sellQty = Math.floor(qty - keep);
 			if (sellQty <= 0) continue;
 			const sold = sellItem(state, content, item.id, sellQty, now);
@@ -549,10 +775,34 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 
 type ActionChoices = {
 	fight: FightPlan | null;
-	questTarget: MonsterId | null;
+	quest: QuestPlan | null;
 	plan: { recipeId: string; gain: number; perMinute: number } | null;
 	gather: { itemId: string; perMinute: number } | null;
 };
+
+function questCommand(quest: QuestPlan): StartActionCommand {
+	if (quest.kind === "fight") {
+		return { kind: "fight", monsterId: quest.targetId };
+	}
+	if (quest.kind === "craft") {
+		return { kind: "craft", recipeId: quest.targetId };
+	}
+	return {
+		kind: "gather",
+		skill: skillOf(quest.targetId),
+		targetId: quest.targetId,
+	};
+}
+
+function tryStart(
+	state: GameState,
+	content: GameContent,
+	command: StartActionCommand,
+	now: number,
+): GameState | null {
+	const result = startAction(state, content, command, now);
+	return result.isOk() ? result.value : null;
+}
 
 function startBestAction(
 	state: GameState,
@@ -560,74 +810,47 @@ function startBestAction(
 	choices: ActionChoices,
 	now: number,
 ): GameState | null {
-	if (choices.questTarget) {
-		const result = startAction(
-			state,
-			content,
-			{
-				kind: "fight",
-				monsterId: choices.questTarget,
-			},
-			now,
-		);
-		if (result.isOk()) return result.value;
+	const quest = choices.quest;
+	if (quest) {
+		const started = tryStart(state, content, questCommand(quest), now);
+		if (started) return started;
 	}
 
-	const gatherValue = choices.gather?.perMinute ?? 0;
-	const fightValue = choices.fight?.perMinute ?? 0;
-	const craftValue = choices.plan?.perMinute ?? 0;
-
-	if (craftValue > gatherValue && craftValue >= fightValue && choices.plan) {
-		const result = startAction(
-			state,
-			content,
-			{
-				kind: "craft",
-				recipeId: choices.plan.recipeId,
-			},
-			now,
-		);
-		if (result.isOk()) return result.value;
-	}
-
-	if (fightValue > gatherValue && choices.fight) {
-		const result = startAction(
-			state,
-			content,
-			{
-				kind: "fight",
-				monsterId: choices.fight.monsterId,
-			},
-			now,
-		);
-		if (result.isOk()) return result.value;
-	}
-
-	if (choices.gather) {
-		const result = startAction(
-			state,
-			content,
-			{
-				kind: "gather",
-				skill: skillOf(choices.gather.itemId),
-				targetId: choices.gather.itemId,
-			},
-			now,
-		);
-		if (result.isOk()) return result.value;
-	}
-
+	const candidates: Array<{
+		perMinute: number;
+		run: () => GameState | null;
+	}> = [];
 	if (choices.plan) {
-		const result = startAction(
-			state,
-			content,
-			{
-				kind: "craft",
-				recipeId: choices.plan.recipeId,
-			},
-			now,
-		);
-		if (result.isOk()) return result.value;
+		const recipeId = choices.plan.recipeId;
+		candidates.push({
+			perMinute: choices.plan.perMinute,
+			run: () => tryStart(state, content, { kind: "craft", recipeId }, now),
+		});
+	}
+	if (choices.fight) {
+		const monsterId = choices.fight.monsterId;
+		candidates.push({
+			perMinute: choices.fight.perMinute,
+			run: () => tryStart(state, content, { kind: "fight", monsterId }, now),
+		});
+	}
+	if (choices.gather) {
+		const itemId = choices.gather.itemId;
+		candidates.push({
+			perMinute: choices.gather.perMinute,
+			run: () =>
+				tryStart(
+					state,
+					content,
+					{ kind: "gather", skill: skillOf(itemId), targetId: itemId },
+					now,
+				),
+		});
+	}
+	candidates.sort((a, b) => b.perMinute - a.perMinute);
+	for (const candidate of candidates) {
+		const started = candidate.run();
+		if (started) return started;
 	}
 
 	return null;

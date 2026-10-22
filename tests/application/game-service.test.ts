@@ -69,6 +69,28 @@ test("start action refuses a second action and records the error in the log", as
 	db.close();
 });
 
+test("the action log records the real target of a craft", async () => {
+	const { service, db } = makeService();
+	const crafted = await service.craft("p1", "chop_wood");
+	assert.equal(crafted.isOk(), true);
+	const events = await service.listEvents("p1", 10);
+	const started = events.find((event) => event.type === "action.started");
+	assert.ok(started);
+	assert.equal(started?.payload.target, "chop_wood");
+	db.close();
+});
+
+test("the action log records the monster id of a fight", async () => {
+	const { service, db } = makeService();
+	const fought = await service.fight("p1", "rabbit");
+	assert.equal(fought.isOk(), true);
+	const events = await service.listEvents("p1", 10);
+	const started = events.find((event) => event.type === "action.started");
+	assert.ok(started);
+	assert.equal(started?.payload.target, "rabbit");
+	db.close();
+});
+
 test("selling adds gold and buying spends it", async () => {
 	const { service, db } = makeService();
 	const first = await service.getState("p1");
