@@ -11,7 +11,7 @@ import {
 import { sellItem } from "./trade.ts";
 import { claimQuest } from "./quest-rewards.ts";
 import { prestige, previewPrestige } from "./prestige.ts";
-import { questProgress } from "./quests.ts";
+import { questProgress, questCompleted } from "./quests.ts";
 
 export const PAYBACK_MIN_SEC = 3 * 60;
 export const PAYBACK_MAX_SEC = 15 * 60;
@@ -213,7 +213,9 @@ function zoneUnlocked(
 	const unlock = zone.unlock;
 	if (unlock.kind === "quest") {
 		const status = state.quests[unlock.quest]?.status;
-		return status === "completed" || status === "claimed";
+		if (status === "completed" || status === "claimed") return true;
+		const quest = content.quests.find((entry) => entry.id === unlock.quest);
+		return quest ? questCompleted(state, quest) : false;
 	}
 	if (unlock.kind === "skillLevel") {
 		return (state.skills[unlock.skill]?.level ?? 0) >= unlock.level;

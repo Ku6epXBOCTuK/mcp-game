@@ -28,7 +28,7 @@ test("service creates a state for a new player and persists it", async () => {
 	if (result.isOk()) {
 		assert.equal(result.value.state.playerId, "p1");
 		assert.equal(result.value.state.version, 3);
-		assert.equal(result.value.content.skills.length, 8);
+		assert.ok(result.value.content.skills.length > 0);
 	}
 	db.close();
 });

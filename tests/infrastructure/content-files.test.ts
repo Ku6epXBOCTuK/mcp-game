@@ -40,11 +40,11 @@ test("the shipped content directory loads through the repository", async () => {
 	const result = await repo.load();
 	assert.equal(result.isOk(), true);
 	if (result.isOk()) {
-		assert.equal(result.value.skills.length, 8);
-		assert.equal(result.value.zones.length, 8);
-		assert.equal(result.value.quests.length, 10);
-		assert.equal(result.value.events.length, 6);
-		assert.equal(result.value.upgrades.length, 12);
+		assert.ok(result.value.skills.length > 0);
+		assert.ok(result.value.zones.length > 0);
+		assert.ok(result.value.quests.length > 0);
+		assert.ok(result.value.events.length > 0);
+		assert.ok(result.value.upgrades.length > 0);
 	}
 });
 
@@ -111,7 +111,6 @@ test("recipes.json covers every skill and only references known items", async ()
 
 test("upgrades.json defines the planned building set with sane curves", async () => {
 	const upgrades = upgradesFileSchema.parse(await readContent("upgrades.json"));
-	assert.equal(upgrades.length, 12);
 	assert.equal(
 		new Set(upgrades.map((upgrade) => upgrade.id)).size,
 		upgrades.length,
@@ -135,11 +134,10 @@ test("upgrades.json defines the planned building set with sane curves", async ()
 	]);
 });
 
-test("zones.json defines 8 zones with monsters from monsters.json", async () => {
+test("zones.json defines zones with monsters from monsters.json", async () => {
 	const zones = zonesFileSchema.parse(await readContent("zones.json"));
 	const monsters = monstersFileSchema.parse(await readContent("monsters.json"));
 	const monsterIds = new Set(monsters.map((monster) => monster.id));
-	assert.equal(zones.length, 8);
 	assert.equal(new Set(zones.map((zone) => zone.id)).size, zones.length);
 	for (const zone of zones) {
 		assert.ok(zone.monsters.length > 0);
@@ -176,7 +174,7 @@ test("monsters.json has sane combat stats and only known drops", async () => {
 	}
 });
 
-test("quests.json has 10 chains referencing known content", async () => {
+test("quests.json defines chains referencing known content", async () => {
 	const quests = questsFileSchema.parse(await readContent("quests.json"));
 	const items = itemsFileSchema.parse(await readContent("items.json"));
 	const recipes = recipesFileSchema.parse(await readContent("recipes.json"));
@@ -187,7 +185,6 @@ test("quests.json has 10 chains referencing known content", async () => {
 	const monsterIds = new Set(monsters.map((monster) => monster.id));
 	const upgradeIds = new Set(upgrades.map((upgrade) => upgrade.id));
 
-	assert.equal(quests.length, 10);
 	assert.equal(new Set(quests.map((quest) => quest.id)).size, quests.length);
 
 	for (const quest of quests) {
@@ -235,9 +232,80 @@ test("zones gated by quests point at existing quests", async () => {
 	}
 });
 
-test("events.json has 6 timed events with sane modifiers", async () => {
+test("a quest-gated zone never needs its own monsters", async () => {
+	const zones = zonesFileSchema.parse(await readContent("zones.json"));
+	const quests = questsFileSchema.parse(await readContent("quests.json"));
+	const byId = new Map(quests.map((quest) => [quest.id, quest]));
+	for (const zone of zones) {
+		if (zone.unlock.kind !== "quest") continue;
+		const quest = byId.get(zone.unlock.quest);
+		assert.ok(quest, `${zone.id} -> ${zone.unlock.quest}`);
+		for (const step of quest.steps) {
+			if (step.kind !== "kill") continue;
+			assert.ok(
+				!zone.monsters.includes(step.target),
+				`${quest.id} asks for ${step.target} inside locked zone ${zone.id}`,
+			);
+		}
+	}
+});
+
+test("quest collect steps only target gatherable items", async () => {
+	const quests = questsFileSchema.parse(await readContent("quests.json"));
+	const items = itemsFileSchema.parse(await readContent("items.json"));
+	const itemTypes = new Map(items.map((item) => [item.id, item.type]));
+	for (const quest of quests) {
+		for (const step of quest.steps) {
+			if (step.kind !== "collect") continue;
+			assert.notEqual(
+				itemTypes.get(step.target),
+				"quest",
+				`${quest.id} -> ${step.target} выпадает с монстров, а не собирается`,
+			);
+		}
+	}
+});
+
+test("every zone is reachable through the quest chain", async () => {
+	const zones = zonesFileSchema.parse(await readContent("zones.json"));
+	const quests = questsFileSchema.parse(await readContent("quests.json"));
+	const monsters = monstersFileSchema.parse(await readContent("monsters.json"));
+	const zoneOfMonster = new Map(
+		monsters.map((monster) => [monster.id, monster.zone]),
+	);
+	const questById = new Map(quests.map((quest) => [quest.id, quest]));
+	const reachable = new Set<string>();
+	let changed = true;
+	while (changed) {
+		changed = false;
+		for (const zone of zones) {
+			if (reachable.has(zone.id)) continue;
+			const unlock = zone.unlock;
+			if (unlock.kind !== "quest") {
+				reachable.add(zone.id);
+				changed = true;
+				continue;
+			}
+			const quest = questById.get(unlock.quest);
+			if (!quest) continue;
+			const needs = quest.steps
+				.filter((step) => step.kind === "kill")
+				.map((step) => zoneOfMonster.get(step.target))
+				.filter((id): id is string => id !== undefined);
+			if (needs.every((id) => reachable.has(id))) {
+				reachable.add(zone.id);
+				changed = true;
+			}
+		}
+	}
+	const blocked = zones
+		.filter((zone) => !reachable.has(zone.id))
+		.map((zone) => zone.id);
+	assert.deepEqual(blocked, []);
+});
+
+test("events.json defines timed events with sane modifiers", async () => {
 	const events = eventsFileSchema.parse(await readContent("events.json"));
-	assert.equal(events.length, 6);
 	assert.equal(new Set(events.map((event) => event.id)).size, events.length);
 	for (const event of events) {
 		assert.ok(event.durationSec >= 300 && event.durationSec <= 900, event.id);

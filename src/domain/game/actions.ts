@@ -16,6 +16,7 @@ import {
 } from "../shared/result.ts";
 import type { GameContent } from "../content/types.ts";
 import { creditLimit } from "./bank.ts";
+import { questCompleted } from "./quests.ts";
 import type {
 	ActiveAction,
 	GameState,
@@ -112,7 +113,11 @@ export function startAction(
 		if (unlock.kind === "quest") {
 			const quest = content.quests.find((entry) => entry.id === unlock.quest);
 			const status = quest ? state.quests[quest.id]?.status : undefined;
-			if (status !== "completed" && status !== "claimed") {
+			const done =
+				status === "completed" ||
+				status === "claimed" ||
+				(quest ? questCompleted(state, quest) : false);
+			if (!done) {
 				return zoneLocked(zone.id, `нужен квест "${unlock.quest}"`);
 			}
 		}

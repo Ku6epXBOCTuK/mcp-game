@@ -55,9 +55,9 @@
 	{
 		"id": "quest_swamp",
 		"name": "Болотная нечисть",
-		"description": "Откройте болото: убейте слизь и соберите травы.",
+		"description": "Расчистите опушку от волков и соберите траву — это откроет болото.",
 		"steps": [
-			{ "kind": "kill", "target": "swamp_ooze", "qty": 4 },
+			{ "kind": "kill", "target": "wolf", "qty": 5 },
 			{ "kind": "collect", "target": "herb", "qty": 10 }
 		],
 		"rewards": [
@@ -68,10 +68,10 @@
 	{
 		"id": "quest_cave",
 		"name": "Вход в пещеру",
-		"description": "Победите пещерных пауков и найдите осколок кристалла.",
+		"description": "Убейте болотную слизь и хищника — это откроет пещеру.",
 		"steps": [
-			{ "kind": "kill", "target": "cave_spider", "qty": 5 },
-			{ "kind": "collect", "target": "crystal_shard", "qty": 1 }
+			{ "kind": "kill", "target": "swamp_ooze", "qty": 4 },
+			{ "kind": "kill", "target": "bog_lurker", "qty": 1 }
 		],
 		"rewards": [
 			{ "kind": "gold", "id": "gold", "qty": 1200 },
@@ -94,10 +94,10 @@
 	{
 		"id": "quest_ruins",
 		"name": "Забытый орден",
-		"description": "Найдите древнюю печать в руинах.",
+		"description": "Победите пещерных пауков и голема — это откроет руины.",
 		"steps": [
-			{ "kind": "kill", "target": "ruin_guardian", "qty": 3 },
-			{ "kind": "collect", "target": "ancient_seal", "qty": 1 }
+			{ "kind": "kill", "target": "cave_spider", "qty": 5 },
+			{ "kind": "kill", "target": "crystal_golem", "qty": 1 }
 		],
 		"rewards": [
 			{ "kind": "gold", "id": "gold", "qty": 2500 },
@@ -107,14 +107,27 @@
 	{
 		"id": "quest_dragon",
 		"name": "Логово дракона",
-		"description": "Добудьте чешую дракона.",
+		"description": "Победите хранителя руин и тень — это откроет логово дракона.",
+		"steps": [
+			{ "kind": "kill", "target": "ruin_guardian", "qty": 3 },
+			{ "kind": "kill", "target": "shadow", "qty": 1 }
+		],
+		"rewards": [
+			{ "kind": "gold", "id": "gold", "qty": 2500 },
+			{ "kind": "upgrade", "id": "alchemy_lab", "qty": 1 }
+		]
+	},
+	{
+		"id": "quest_dragon_slayer",
+		"name": "Убийца драконов",
+		"description": "Добейте дракона и дрейков, заберите чешую.",
 		"steps": [
 			{ "kind": "kill", "target": "dragon", "qty": 1 },
-			{ "kind": "collect", "target": "dragon_scale", "qty": 2 }
+			{ "kind": "kill", "target": "drake", "qty": 2 }
 		],
 		"rewards": [
 			{ "kind": "gold", "id": "gold", "qty": 10000 },
-			{ "kind": "upgrade", "id": "alchemy_lab", "qty": 1 }
+			{ "kind": "skillLevel", "id": "combat", "qty": 3 }
 		]
 	},
 	{

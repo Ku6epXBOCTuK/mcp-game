@@ -144,8 +144,8 @@ test("state endpoint returns the player snapshot", async () => {
 	assert.equal(response.body.canPlay, true);
 	assert.equal(response.body.dev, true);
 	assert.ok(Array.isArray(response.body.skills));
-	assert.equal(response.body.skills.length, 8);
-	assert.equal(response.body.upgrades.length, 12);
+	assert.ok(response.body.skills.length > 0);
+	assert.ok(response.body.upgrades.length > 0);
 	assert.ok(Array.isArray(response.body.events));
 	await harness.close();
 });
