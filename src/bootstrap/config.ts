@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import type { AuthMode } from "../infrastructure/http/auth.ts";
 
 export type ServerConfig = {
 	dbPath: string;
@@ -8,6 +9,7 @@ export type ServerConfig = {
 	host: string;
 	port: number;
 	dev: boolean;
+	auth: AuthMode;
 };
 
 function envString(name: string, fallback: string): string {
@@ -15,9 +17,17 @@ function envString(name: string, fallback: string): string {
 	return value && value.length > 0 ? value : fallback;
 }
 
+function authMode(dev: boolean): AuthMode {
+	const value = envString("MCPG_AUTH", "").trim().toLowerCase();
+	if (value === "off") return "off";
+	if (value === "keys") return "keys";
+	return dev ? "off" : "keys";
+}
+
 export function loadConfig(): ServerConfig {
 	const root = resolve(import.meta.dirname, "..", "..");
 	const dataDir = resolve(envString("MCPG_DATA_DIR", resolve(root, "data")));
+	const dev = envString("MCPG_ENV", "development") !== "production";
 	return {
 		dbPath: resolve(dataDir, "game.db"),
 		contentDir: resolve(
@@ -26,7 +36,8 @@ export function loadConfig(): ServerConfig {
 		publicDir: resolve(envString("MCPG_PUBLIC_DIR", resolve(root, "public"))),
 		host: envString("MCPG_HOST", "127.0.0.1"),
 		port: Number(envString("MCPG_PORT", "3000")),
-		dev: envString("MCPG_ENV", "development") !== "production",
+		dev,
+		auth: authMode(dev),
 	};
 }
 

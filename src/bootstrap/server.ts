@@ -47,12 +47,14 @@ export async function startServer(): Promise<RunningServer> {
 	const route = createMcpRoute({
 		games: gamesService,
 		keys: keyService,
+		auth: config.auth,
 		dev: config.dev,
 		now: () => clock.now(),
 	});
 	const debugRoute = createDebugRoute({
 		games: gamesService,
 		keys: keyService,
+		auth: config.auth,
 		dev: config.dev,
 		now: () => clock.now(),
 	});
@@ -74,7 +76,7 @@ export async function startServer(): Promise<RunningServer> {
 			createdAt: clock.now(),
 		}));
 	const playerKeys = await keyService.list(player.id);
-	if (playerKeys.length === 0) {
+	if (config.auth === "keys" && playerKeys.length === 0) {
 		const issued = await keyService.issue({
 			playerId: player.id,
 			label: "default",
@@ -87,6 +89,11 @@ export async function startServer(): Promise<RunningServer> {
 	console.log(`MCP: http://${config.host}:${config.port}/mcp`);
 	console.log(`Дебаг: http://${config.host}:${config.port}/`);
 	console.log(`Игрок: ${player.id}`);
+	console.log(
+		config.auth === "off"
+			? "Авторизация: отключена (MCPG_AUTH=off), ключ не нужен"
+			: "Авторизация: по API-ключу (MCPG_AUTH=keys)",
+	);
 
 	return {
 		port: config.port,

@@ -22,7 +22,10 @@ type Harness = {
 	close: () => Promise<void>;
 };
 
-async function startHarness(): Promise<Harness> {
+async function startHarness(
+	options: { auth?: "off" | "keys" } = {},
+): Promise<Harness> {
+	const auth = options.auth ?? "keys";
 	const db = openMemoryDatabase();
 	const players = new SqlitePlayerRepository(db);
 	const games = new SqliteGameRepository(db);
@@ -36,12 +39,14 @@ async function startHarness(): Promise<Harness> {
 	const route = createMcpRoute({
 		games: gameService,
 		keys: keyService,
+		auth,
 		dev: true,
 		now: () => 1_000_000,
 	});
 	const debug = createDebugRoute({
 		games: gameService,
 		keys: keyService,
+		auth,
 		dev: true,
 		now: () => 1_000_000,
 	});
@@ -132,6 +137,28 @@ test("request with an unknown api key is rejected with 403", async () => {
 		{ authorization: `Bearer mcp_live_${"z".repeat(32)}` },
 	);
 	assert.equal(response.status, 403);
+	await harness.close();
+});
+
+test("request without an api key works when auth is off", async () => {
+	const harness = await startHarness({ auth: "off" });
+	await harness.issue("p1", ["read", "play"]);
+	const response = await rpc(harness.base, "tools/list", {});
+	assert.equal(response.status, 200);
+	assert.equal((response.body?.result?.tools ?? []).length, 13);
+	await harness.close();
+});
+
+test("auth off ignores an unknown api key", async () => {
+	const harness = await startHarness({ auth: "off" });
+	await harness.issue("p1", ["read", "play"]);
+	const response = await rpc(
+		harness.base,
+		"tools/list",
+		{},
+		{ authorization: `Bearer mcp_live_${"z".repeat(32)}` },
+	);
+	assert.equal(response.status, 200);
 	await harness.close();
 });
 

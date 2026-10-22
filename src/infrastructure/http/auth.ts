@@ -1,9 +1,12 @@
+import type { GameService } from "../../application/use-cases/game-service.ts";
 import type { ApiKeyService } from "../identity/api-key-service.ts";
 import type { McpScope } from "../mcp/tool-result.ts";
 
-export type ApiKeyResolution =
-	| { ok: true; playerId: string; scopes: McpScope[] }
-	| { ok: false; reason: "missing" | "invalid" };
+export type AuthMode = "off" | "keys";
+
+export type AuthContext =
+	| { ok: true; playerId: string; scopes: McpScope[]; token: string }
+	| { ok: false; status: number; body: string };
 
 export function extractApiKey(request: Request, dev: boolean): string | null {
 	const authorization = request.headers.get("authorization");
@@ -20,19 +23,60 @@ export function extractApiKey(request: Request, dev: boolean): string | null {
 	return null;
 }
 
-export async function resolveApiKey(
+export function scopesOf(scopes: string[]): McpScope[] {
+	if (scopes.includes("play")) return ["read", "play"];
+	if (scopes.includes("read")) return ["read"];
+	return [];
+}
+
+export async function authorize(
 	request: Request,
-	service: ApiKeyService,
-	options: { dev: boolean; now: number },
-): Promise<ApiKeyResolution> {
-	const raw = extractApiKey(request, options.dev);
-	if (!raw) return { ok: false, reason: "missing" };
-	const resolved = await service.resolve(raw, options.now);
-	if (!resolved) return { ok: false, reason: "invalid" };
-	const scopes: McpScope[] = resolved.scopes.includes("play")
-		? ["read", "play"]
-		: resolved.scopes.includes("read")
-			? ["read"]
-			: [];
-	return { ok: true, playerId: resolved.playerId, scopes };
+	deps: {
+		games: GameService;
+		keys: ApiKeyService;
+		auth: AuthMode;
+		dev: boolean;
+		now: number;
+	},
+): Promise<AuthContext> {
+	const raw = extractApiKey(request, deps.dev);
+	if (raw) {
+		const resolved = await deps.keys.resolve(raw, deps.now);
+		if (resolved) {
+			return {
+				ok: true,
+				playerId: resolved.playerId,
+				scopes: scopesOf(resolved.scopes),
+				token: raw,
+			};
+		}
+		if (deps.auth === "keys") {
+			return {
+				ok: false,
+				status: 403,
+				body: "API-ключ не найден или отозван.",
+			};
+		}
+	}
+	if (deps.auth === "keys") {
+		return {
+			ok: false,
+			status: 401,
+			body: "Отсутствует API-ключ. Передайте Authorization: Bearer <key>.",
+		};
+	}
+	const fallback = await deps.games.firstPlayerId();
+	if (!fallback) {
+		return {
+			ok: false,
+			status: 404,
+			body: "Игроков нет: выполните npm run keys create.",
+		};
+	}
+	return {
+		ok: true,
+		playerId: fallback,
+		scopes: ["read", "play"],
+		token: raw ?? "",
+	};
 }

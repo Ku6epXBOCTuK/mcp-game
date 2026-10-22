@@ -1,14 +1,16 @@
 import { z } from "zod";
 import type { GameService } from "../../application/use-cases/game-service.ts";
 import type { ApiKeyService } from "../identity/api-key-service.ts";
-import type { PlayerId, SkillId } from "../../domain/game/types.ts";
-import { upgradeCost, xpToNext } from "../../domain/shared/curves.ts";
+import type { SkillId } from "../../domain/game/types.ts";
+import { xpToNext } from "../../domain/shared/curves.ts";
+import { upgradePrice } from "../../domain/game/actions.ts";
 import type { McpScope } from "../mcp/tool-result.ts";
-import { extractApiKey } from "./auth.ts";
+import { authorize, type AuthMode } from "./auth.ts";
 
 export type DebugRouteDeps = {
 	games: GameService;
 	keys: ApiKeyService;
+	auth: AuthMode;
 	dev: boolean;
 	now: () => number;
 };
@@ -16,10 +18,6 @@ export type DebugRouteDeps = {
 export type DebugRoute = {
 	handle: (request: Request) => Promise<Response>;
 };
-
-type Resolution =
-	| { ok: true; playerId: PlayerId; scopes: McpScope[] }
-	| { ok: false; status: number; body: string };
 
 const actionSchema = z.object({
 	command: z.enum([
@@ -58,53 +56,19 @@ export function createDebugRoute(deps: DebugRouteDeps): DebugRoute {
 	};
 }
 
-async function resolvePlayer(
-	request: Request,
-	deps: DebugRouteDeps,
-): Promise<Resolution> {
-	const raw = extractApiKey(request, deps.dev);
-	if (!raw) {
-		if (!deps.dev) {
-			return {
-				ok: false,
-				status: 401,
-				body: "Отсутствует API-ключ. Передайте X-API-Key или ?key=.",
-			};
-		}
-		const fallback = await deps.games.firstPlayerId();
-		if (!fallback) {
-			return {
-				ok: false,
-				status: 404,
-				body: "Игроков нет: выполните npm run keys create.",
-			};
-		}
-		return { ok: true, playerId: fallback, scopes: ["read", "play"] };
-	}
-	const resolved = await deps.keys.resolve(raw, deps.now());
-	if (!resolved) {
-		return { ok: false, status: 403, body: "API-ключ не найден или отозван." };
-	}
-	const scopes: McpScope[] = resolved.scopes.includes("play")
-		? ["read", "play"]
-		: resolved.scopes.includes("read")
-			? ["read"]
-			: [];
-	return { ok: true, playerId: resolved.playerId, scopes };
-}
-
 async function handleState(
 	request: Request,
 	deps: DebugRouteDeps,
 ): Promise<Response> {
-	const resolution = await resolvePlayer(request, deps);
-	if (!resolution.ok)
-		return json({ error: resolution.body }, resolution.status);
-	const snapshot = await buildSnapshot(
-		resolution.playerId,
-		resolution.scopes,
-		deps,
-	);
+	const context = await authorize(request, {
+		games: deps.games,
+		keys: deps.keys,
+		auth: deps.auth,
+		dev: deps.dev,
+		now: deps.now(),
+	});
+	if (!context.ok) return json({ error: context.body }, context.status);
+	const snapshot = await buildSnapshot(context.playerId, context.scopes, deps);
 	return json(snapshot);
 }
 
@@ -112,10 +76,15 @@ async function handleAction(
 	request: Request,
 	deps: DebugRouteDeps,
 ): Promise<Response> {
-	const resolution = await resolvePlayer(request, deps);
-	if (!resolution.ok)
-		return json({ error: resolution.body }, resolution.status);
-	if (!resolution.scopes.includes("play")) {
+	const context = await authorize(request, {
+		games: deps.games,
+		keys: deps.keys,
+		auth: deps.auth,
+		dev: deps.dev,
+		now: deps.now(),
+	});
+	if (!context.ok) return json({ error: context.body }, context.status);
+	if (!context.scopes.includes("play")) {
 		return json({ error: "Недостаточно прав: нужен ключ со scope play." }, 403);
 	}
 	let payload: unknown;
@@ -129,7 +98,7 @@ async function handleAction(
 		return json({ error: `Неизвестная команда: ${parsed.error.message}` }, 400);
 	}
 	const args = parsed.data;
-	const playerId = resolution.playerId;
+	const playerId = context.playerId;
 	const games = deps.games;
 
 	const result = await (async () => {
@@ -192,7 +161,7 @@ async function handleAction(
 }
 
 async function buildSnapshot(
-	playerId: PlayerId,
+	playerId: string,
 	scopes: McpScope[],
 	deps: DebugRouteDeps,
 ): Promise<Record<string, unknown>> {
@@ -211,6 +180,7 @@ async function buildSnapshot(
 	return {
 		player: player ?? { id: playerId, label: "player" },
 		dev: deps.dev,
+		auth: deps.auth,
 		canPlay: scopes.includes("play"),
 		now: deps.now(),
 		wallet: state.wallet,
@@ -242,8 +212,6 @@ async function buildSnapshot(
 		})),
 		upgrades: content.upgrades.map((upgrade) => {
 			const level = state.upgrades[upgrade.id] ?? 0;
-			const growth =
-				content.balance.costGrowth[upgrade.id] ?? upgrade.costGrowth;
 			return {
 				id: upgrade.id,
 				name: upgrade.name,
@@ -252,7 +220,7 @@ async function buildSnapshot(
 				nextCost:
 					level >= upgrade.maxLevel
 						? null
-						: Math.ceil(upgradeCost(upgrade.costBase, growth, level)),
+						: upgradePrice(content, upgrade.id, level),
 				effect: upgrade.effect,
 			};
 		}),

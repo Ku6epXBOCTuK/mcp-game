@@ -62,7 +62,7 @@ function renderRows(tbody, rows) {
 	}
 	for (const row of rows) {
 		const tr = document.createElement("tr");
-		for (const cell of row.cells) {
+		for (const cell of row) {
 			const td = document.createElement("td");
 			if (cell.num) td.className = "num";
 			if (cell.node) td.append(cell.node);
@@ -111,6 +111,9 @@ function render(data) {
 	el("player").textContent = `${data.player.label} (${data.player.id})`;
 	el("dev-badge").hidden = !data.dev;
 	el("ro-badge").hidden = data.canPlay !== false;
+	const authOff = data.auth === "off";
+	el("auth-badge").hidden = !authOff;
+	keyInput.hidden = authOff;
 
 	renderDefinitions(el("wallet"), [
 		["Золото", fmt(data.wallet.gold)],

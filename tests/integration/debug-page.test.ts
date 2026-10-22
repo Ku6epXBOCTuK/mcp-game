@@ -21,8 +21,11 @@ type Harness = {
 	close: () => Promise<void>;
 };
 
-async function startHarness(options: { dev?: boolean } = {}): Promise<Harness> {
+async function startHarness(
+	options: { dev?: boolean; auth?: "off" | "keys" } = {},
+): Promise<Harness> {
 	const dev = options.dev ?? true;
+	const auth = options.auth ?? "keys";
 	const db = openMemoryDatabase();
 	const players = new SqlitePlayerRepository(db);
 	const games = new SqliteGameRepository(db);
@@ -36,12 +39,14 @@ async function startHarness(options: { dev?: boolean } = {}): Promise<Harness> {
 	const route = createMcpRoute({
 		games: gameService,
 		keys: keyService,
+		auth,
 		dev,
 		now: () => 1_000_000,
 	});
 	const debug = createDebugRoute({
 		games: gameService,
 		keys: keyService,
+		auth,
 		dev,
 		now: () => 1_000_000,
 	});
@@ -145,12 +150,21 @@ test("state endpoint returns the player snapshot", async () => {
 	await harness.close();
 });
 
-test("state endpoint falls back to the first player in dev mode", async () => {
-	const harness = await startHarness();
+test("state endpoint falls back to the first player when auth is off", async () => {
+	const harness = await startHarness({ auth: "off" });
 	await harness.issue("p1", ["read"]);
 	const response = await getState(harness.base);
 	assert.equal(response.status, 200);
 	assert.equal(response.body.player.id, "p1");
+	assert.equal(response.body.auth, "off");
+	await harness.close();
+});
+
+test("state endpoint requires a key when auth is keys", async () => {
+	const harness = await startHarness({ auth: "keys" });
+	await harness.issue("p1", ["read"]);
+	const response = await getState(harness.base);
+	assert.equal(response.status, 401);
 	await harness.close();
 });
 
