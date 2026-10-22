@@ -23,6 +23,7 @@ import {
 	type StartActionCommand,
 } from "../../domain/game/actions.ts";
 import { sellItem, buyItem } from "../../domain/game/trade.ts";
+import { useItem } from "../../domain/game/health.ts";
 import { claimQuest } from "../../domain/game/quest-rewards.ts";
 import { allQuestProgress } from "../../domain/game/quests.ts";
 import { prestige, previewPrestige } from "../../domain/game/prestige.ts";
@@ -204,6 +205,34 @@ export class GameService {
 				ts: now,
 				type: "upgrade.bought",
 				payload: { upgradeId, level: next.state.upgrades[upgradeId] ?? 0 },
+			},
+		]);
+		return ok(next);
+	}
+
+	async useItem(
+		playerId: PlayerId,
+		itemId: string,
+	): Promise<UseCaseResult<GameContext>> {
+		const context = await this.loadContext(playerId);
+		if (context.isErr()) return err(context.error);
+		const now = this.clock.now();
+		const result = useItem(
+			context.value.state,
+			context.value.content,
+			itemId,
+			now,
+		);
+		if (result.isErr()) {
+			await this.logError(playerId, now, result.error);
+			return err(result.error);
+		}
+		const next = { ...context.value, state: result.value };
+		await this.commit(playerId, next, [
+			{
+				ts: now,
+				type: "item.used",
+				payload: { itemId, hp: result.value.health.hp },
 			},
 		]);
 		return ok(next);

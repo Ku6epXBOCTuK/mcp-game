@@ -192,6 +192,9 @@ export const balanceSchema = z.object({
 	prestigeGoldExponent: z.number().min(0),
 	eventChancePerMinute: z.number().min(0),
 	playerMaxHp: z.number().int().positive(),
+	playerMaxHpPerCombatLevel: z.number().min(0).optional(),
+	playerHealthRegenPerSec: z.number().min(0).optional(),
+	potionHealthHealPercent: z.number().min(0).max(1).optional(),
 	playerDamageBase: z.number().min(0),
 	playerDamagePerLevel: z.number().min(0),
 }) satisfies z.ZodType<BalanceContent>;

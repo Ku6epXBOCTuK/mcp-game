@@ -26,6 +26,7 @@ const actionSchema = z.object({
 		"buy_upgrade",
 		"advance",
 		"claim_quest",
+		"use",
 		"sell",
 		"buy",
 	]),
@@ -133,6 +134,8 @@ async function handleAction(
 			}
 			case "claim_quest":
 				return games.claimQuest(playerId, String(args.questId ?? ""));
+			case "use":
+				return games.useItem(playerId, String(args.itemId ?? ""));
 			case "sell":
 				return games.sell(
 					playerId,

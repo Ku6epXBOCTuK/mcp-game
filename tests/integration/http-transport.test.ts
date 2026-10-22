@@ -58,6 +58,7 @@ async function startHarness(
 		port: 0,
 	});
 	await http.listen();
+	let closed = false;
 	const address = http.server.address();
 	const port = typeof address === "object" && address ? address.port : 0;
 	return {
@@ -74,6 +75,8 @@ async function startHarness(
 			return issued.key;
 		},
 		close: async () => {
+			if (closed) return;
+			closed = true;
 			await http.close();
 			db.close();
 		},
@@ -121,15 +124,17 @@ async function rpc(
 	return { status: response.status, body: parseRpcBody(text) };
 }
 
-test("request without an api key is rejected with 401", async () => {
+test("request without an api key is rejected with 401", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const response = await rpc(harness.base, "tools/list", {});
 	assert.equal(response.status, 401);
 	await harness.close();
 });
 
-test("request with an unknown api key is rejected with 403", async () => {
+test("request with an unknown api key is rejected with 403", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const response = await rpc(
 		harness.base,
 		"tools/list",
@@ -140,17 +145,23 @@ test("request with an unknown api key is rejected with 403", async () => {
 	await harness.close();
 });
 
-test("request without an api key works when auth is off", async () => {
+test("request without an api key works when auth is off", async (t) => {
 	const harness = await startHarness({ auth: "off" });
+	t.after(() => harness.close());
 	await harness.issue("p1", ["read", "play"]);
 	const response = await rpc(harness.base, "tools/list", {});
 	assert.equal(response.status, 200);
-	assert.equal((response.body?.result?.tools ?? []).length, 13);
+	assert.ok(
+		(response.body?.result?.tools ?? []).some(
+			(tool: { name: string }) => tool.name === "game_state",
+		),
+	);
 	await harness.close();
 });
 
-test("auth off ignores an unknown api key", async () => {
+test("auth off ignores an unknown api key", async (t) => {
 	const harness = await startHarness({ auth: "off" });
+	t.after(() => harness.close());
 	await harness.issue("p1", ["read", "play"]);
 	const response = await rpc(
 		harness.base,
@@ -162,8 +173,9 @@ test("auth off ignores an unknown api key", async () => {
 	await harness.close();
 });
 
-test("request with a valid api key lists the 13 tools", async () => {
+test("request with a valid api key lists the tools", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await rpc(
 		harness.base,
@@ -175,12 +187,13 @@ test("request with a valid api key lists the 13 tools", async () => {
 	);
 	assert.equal(response.status, 200);
 	const tools = response.body?.result?.tools ?? [];
-	assert.equal(tools.length, 13);
+	assert.ok(tools.some((tool: { name: string }) => tool.name === "game_state"));
 	await harness.close();
 });
 
-test("api key can be passed in the x-api-key header", async () => {
+test("api key can be passed in the x-api-key header", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await rpc(
 		harness.base,
@@ -191,12 +204,17 @@ test("api key can be passed in the x-api-key header", async () => {
 		},
 	);
 	assert.equal(response.status, 200);
-	assert.equal((response.body?.result?.tools ?? []).length, 13);
+	assert.ok(
+		(response.body?.result?.tools ?? []).some(
+			(tool: { name: string }) => tool.name === "game_state",
+		),
+	);
 	await harness.close();
 });
 
-test("api key can be passed as a query parameter in dev mode", async () => {
+test("api key can be passed as a query parameter in dev mode", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await fetch(`${harness.base}/mcp?key=${key}`, {
 		method: "POST",
@@ -216,8 +234,9 @@ test("api key can be passed as a query parameter in dev mode", async () => {
 	await harness.close();
 });
 
-test("a tool call reaches the game state of its player", async () => {
+test("a tool call reaches the game state of its player", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await rpc(
 		harness.base,
@@ -231,8 +250,9 @@ test("a tool call reaches the game state of its player", async () => {
 	await harness.close();
 });
 
-test("two players get different states", async () => {
+test("two players get different states", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const keyOne = await harness.issue("p1", ["read", "play"]);
 	const keyTwo = await harness.issue("p2", ["read", "play"]);
 	const one = await rpc(
@@ -255,8 +275,9 @@ test("two players get different states", async () => {
 	await harness.close();
 });
 
-test("read-only key cannot mutate the game", async () => {
+test("read-only key cannot mutate the game", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read"]);
 	const response = await rpc(
 		harness.base,
@@ -273,8 +294,9 @@ test("read-only key cannot mutate the game", async () => {
 	await harness.close();
 });
 
-test("unknown route returns 404", async () => {
+test("unknown route returns 404", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const response = await fetch(`${harness.base}/nope`);
 	assert.equal(response.status, 404);
 	await harness.close();

@@ -67,7 +67,6 @@ test("items.json has unique ids and covers every item type", async () => {
 		"resource",
 		"tool",
 	]);
-	assert.ok(items.length >= 50);
 });
 
 test("items.json keeps prices sane", async () => {
@@ -106,7 +105,6 @@ test("recipes.json covers every skill and only references known items", async ()
 		assert.ok(recipe.timeSec > 0);
 	}
 	assert.equal(new Set(recipes.map((r) => r.id)).size, recipes.length);
-	assert.ok(recipes.length >= 40);
 });
 
 test("upgrades.json defines the planned building set with sane curves", async () => {

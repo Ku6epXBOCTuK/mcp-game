@@ -58,6 +58,7 @@ async function startHarness(
 		port: 0,
 	});
 	await http.listen();
+	let closed = false;
 	const address = http.server.address();
 	const port = typeof address === "object" && address ? address.port : 0;
 	return {
@@ -73,6 +74,8 @@ async function startHarness(
 			return issued.key;
 		},
 		close: async () => {
+			if (closed) return;
+			closed = true;
 			await http.close();
 			db.close();
 		},
@@ -109,8 +112,9 @@ async function postAction(
 	return { status: response.status, body: await response.json() };
 }
 
-test("index page is served as html", async () => {
+test("index page is served as html", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const response = await fetch(`${harness.base}/`, {
 		headers: { connection: "close" },
 	});
@@ -122,8 +126,9 @@ test("index page is served as html", async () => {
 	await harness.close();
 });
 
-test("debug script is served", async () => {
+test("debug script is served", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const response = await fetch(`${harness.base}/debug.js`, {
 		headers: { connection: "close" },
 	});
@@ -135,8 +140,9 @@ test("debug script is served", async () => {
 	await harness.close();
 });
 
-test("state endpoint returns the player snapshot", async () => {
+test("state endpoint returns the player snapshot", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await getState(harness.base, key);
 	assert.equal(response.status, 200);
@@ -150,8 +156,9 @@ test("state endpoint returns the player snapshot", async () => {
 	await harness.close();
 });
 
-test("state endpoint falls back to the first player when auth is off", async () => {
+test("state endpoint falls back to the first player when auth is off", async (t) => {
 	const harness = await startHarness({ auth: "off" });
+	t.after(() => harness.close());
 	await harness.issue("p1", ["read"]);
 	const response = await getState(harness.base);
 	assert.equal(response.status, 200);
@@ -160,23 +167,26 @@ test("state endpoint falls back to the first player when auth is off", async () 
 	await harness.close();
 });
 
-test("state endpoint requires a key when auth is keys", async () => {
+test("state endpoint requires a key when auth is keys", async (t) => {
 	const harness = await startHarness({ auth: "keys" });
+	t.after(() => harness.close());
 	await harness.issue("p1", ["read"]);
 	const response = await getState(harness.base);
 	assert.equal(response.status, 401);
 	await harness.close();
 });
 
-test("state endpoint rejects an unknown key", async () => {
+test("state endpoint rejects an unknown key", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const response = await getState(harness.base, `mcp_live_${"z".repeat(32)}`);
 	assert.equal(response.status, 403);
 	await harness.close();
 });
 
-test("read-only key cannot run actions", async () => {
+test("read-only key cannot run actions", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read"]);
 	const response = await postAction(harness.base, key, {
 		command: "cancel",
@@ -186,8 +196,9 @@ test("read-only key cannot run actions", async () => {
 	await harness.close();
 });
 
-test("action endpoint starts and cancels an action", async () => {
+test("action endpoint starts and cancels an action", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const started = await postAction(harness.base, key, {
 		command: "start",
@@ -209,8 +220,9 @@ test("action endpoint starts and cancels an action", async () => {
 	await harness.close();
 });
 
-test("action endpoint reports domain errors", async () => {
+test("action endpoint reports domain errors", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await postAction(harness.base, key, {
 		command: "buy_upgrade",
@@ -221,16 +233,18 @@ test("action endpoint reports domain errors", async () => {
 	await harness.close();
 });
 
-test("action endpoint rejects unknown commands", async () => {
+test("action endpoint rejects unknown commands", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const key = await harness.issue("p1", ["read", "play"]);
 	const response = await postAction(harness.base, key, { command: "nope" });
 	assert.equal(response.status, 400);
 	await harness.close();
 });
 
-test("two players see different snapshots", async () => {
+test("two players see different snapshots", async (t) => {
 	const harness = await startHarness();
+	t.after(() => harness.close());
 	const keyOne = await harness.issue("p1", ["read", "play"]);
 	const keyTwo = await harness.issue("p2", ["read", "play"]);
 	const one = await getState(harness.base, keyOne);

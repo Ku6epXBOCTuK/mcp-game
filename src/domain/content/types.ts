@@ -134,6 +134,9 @@ export type BalanceContent = {
 	prestigeGoldExponent: number;
 	eventChancePerMinute: number;
 	playerMaxHp: number;
+	playerMaxHpPerCombatLevel?: number | undefined;
+	playerHealthRegenPerSec?: number | undefined;
+	potionHealthHealPercent?: number | undefined;
 	playerDamageBase: number;
 	playerDamagePerLevel: number;
 };

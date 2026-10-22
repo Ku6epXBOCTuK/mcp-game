@@ -2,6 +2,7 @@ import { productionRate, xpToNext } from "../shared/curves.ts";
 import { nextRandom } from "../shared/rng.ts";
 import { refreshMarket } from "./market.ts";
 import { accrueInterest, applyGoldIncome } from "./bank.ts";
+import { maxHpFor, regenerateHealth } from "./health.ts";
 import type { GameContent, EventContent } from "../content/types.ts";
 import type { ActiveAction, ActiveEvent, GameState, SkillId } from "./types.ts";
 
@@ -294,6 +295,7 @@ function applyFight(
 		"combat",
 		multipliers.skillBonus.combat ?? 0,
 	);
+	const maxHp = maxHpFor(state, content);
 	const dps =
 		balance.playerDamageBase + balance.playerDamagePerLevel * combatLevel;
 	const dealtBefore = action.progress;
@@ -307,7 +309,7 @@ function applyFight(
 	if (health <= 0) {
 		return {
 			...state,
-			health: { hp: balance.playerMaxHp, maxHp: balance.playerMaxHp },
+			health: { hp: maxHp, maxHp },
 			activeAction: null,
 		};
 	}
@@ -379,6 +381,7 @@ export function tick(state: GameState, options: TickOptions): GameState {
 	}
 
 	next = accrueInterest(next, content, elapsed);
+	next = regenerateHealth(next, content, elapsed);
 
 	const income = passiveIncomePerSec(next, content);
 	if (income > 0) {

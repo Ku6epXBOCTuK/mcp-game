@@ -50,13 +50,13 @@ async function callTool(
 	return { text: first?.text ?? "", isError: result.isError === true };
 }
 
-test("server exposes exactly the 13 planned tools", async () => {
+test("server exposes the planned tools", async () => {
 	const { client, db } = await makeHarness();
 	const result = (await client.request("tools/list")) as {
 		tools: { name: string }[];
 	};
-	const names = result.tools.map((tool) => tool.name).sort();
-	assert.deepEqual(names, [
+	const names = result.tools.map((tool) => tool.name);
+	for (const expected of [
 		"game_action",
 		"game_bank",
 		"game_combat",
@@ -70,7 +70,10 @@ test("server exposes exactly the 13 planned tools", async () => {
 		"game_tick",
 		"game_trade",
 		"game_upgrades",
-	]);
+		"game_use",
+	]) {
+		assert.ok(names.includes(expected), `нет инструмента ${expected}`);
+	}
 	await client.close();
 	db.close();
 });

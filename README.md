@@ -59,11 +59,11 @@ npm start
 }
 ```
 
-Клиент видит 13 инструментов: `game_state`, `game_action`, `game_craft`,
-`game_upgrades`, `game_trade`, `game_bank`, `game_combat`, `game_quests`,
-`game_market`, `game_skills`, `game_prestige`, `game_log`, `game_tick`, плюс
-ресурсы `game://state`, `game://skills`, `game://market`, `game://quests` и
-промпт `game_strategy`.
+Клиент видит инструменты: `game_state`, `game_action`, `game_craft`,
+`game_upgrades`, `game_trade`, `game_use`, `game_bank`, `game_combat`,
+`game_quests`, `game_market`, `game_skills`, `game_prestige`, `game_log`,
+`game_tick`, плюс ресурсы `game://state`, `game://skills`, `game://market`,
+`game://quests` и промпт `game_strategy`.
 
 При `MCPG_AUTH=keys` запрос без ключа отклоняется с 401, с неверным или
 отозванным ключом — с 403. При `MCPG_AUTH=off` ключ не нужен: сервер работает с

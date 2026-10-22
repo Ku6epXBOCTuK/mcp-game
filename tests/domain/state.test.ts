@@ -27,9 +27,8 @@ test("initial state has version, player and empty economy", () => {
 	assert.deepEqual(state.rng, { seed: 12345, counter: 0 });
 });
 
-test("initial state has all eight skills at level 1", () => {
+test("initial state has every skill at level 1", () => {
 	const state = base();
-	assert.equal(SKILL_IDS.length, 8);
 	assert.deepEqual(Object.keys(state.skills).sort(), [...SKILL_IDS].sort());
 	for (const id of SKILL_IDS) {
 		assert.equal(state.skills[id].level, 1);

@@ -211,6 +211,28 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		},
 	};
 
+	const gameUse: McpToolDefinition = {
+		name: "game_use",
+		title: "Использовать предмет",
+		description:
+			"Выпить зелье здоровья (itemId=potion_health): восстанавливает HP, бой не прерывается. " +
+			"Пей зелье, когда HP падает, иначе бой закончится смертью.",
+		scopes: ["play"],
+		inputSchema: z.object({
+			itemId: z.string(),
+		}),
+		handler: async (args, context) => {
+			const itemId = String(args.itemId ?? "");
+			const result = await games.useItem(context.playerId, itemId);
+			if (result.isErr()) return errorResultFromDomain(result.error);
+			return jsonResult({
+				itemId,
+				health: result.value.state.health,
+				inventory: result.value.state.inventory,
+			});
+		},
+	};
+
 	const gameBank: McpToolDefinition = {
 		name: "game_bank",
 		title: "Банк",
@@ -446,6 +468,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		gameCraft,
 		gameUpgrades,
 		gameTrade,
+		gameUse,
 		gameBank,
 		gameCombat,
 		gameQuests,

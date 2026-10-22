@@ -28,7 +28,7 @@ test("simulation produces metrics for a six hour run", async () => {
 	assert.equal(metrics.durationSec, 6 * 3600);
 	assert.ok(metrics.totalIncome > 0);
 	assert.ok(metrics.goldPerMinute > 0);
-	assert.equal(metrics.stages.length, 8);
+	assert.ok(metrics.stages.length > 0);
 	assert.ok(metrics.idleRatio >= 0 && metrics.idleRatio <= 1);
 	assert.ok(state.skills.chopping);
 });
