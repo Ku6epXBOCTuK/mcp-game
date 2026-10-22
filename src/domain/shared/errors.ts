@@ -36,6 +36,12 @@ export type DomainError =
 			available: number;
 	  }
 	| { code: "ZoneLocked"; message: string; zoneId: string; reason: string }
+	| {
+			code: "CreditLimitExceeded";
+			message: string;
+			limit: number;
+			requested: number;
+	  }
 	| { code: "MonsterUnknown"; message: string; monsterId: string }
 	| { code: "QuestNotCompleted"; message: string; questId: string }
 	| { code: "QuestAlreadyClaimed"; message: string; questId: string }

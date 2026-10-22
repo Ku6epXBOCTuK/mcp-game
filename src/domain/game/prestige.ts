@@ -76,7 +76,7 @@ export function prestige(
 		upgrades: {},
 		quests: {},
 		market: state.market,
-		bank: { deposits: 0, credit: 0, accruedAt: now },
+		bank: { deposits: 0, credit: state.bank.credit, accruedAt: now },
 		counters: { gathered: {}, crafted: {}, killed: {} },
 		stats: { totalGoldEarned: 0 },
 		prestige: {

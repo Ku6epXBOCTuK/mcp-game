@@ -8,6 +8,7 @@ import {
 import type { GameContent } from "../content/types.ts";
 import type { GameState, ItemId } from "./types.ts";
 import { marketBuyPrice, marketSellPrice } from "./market.ts";
+import { applyGoldIncome } from "./bank.ts";
 
 type DomainError = import("../shared/errors.ts").DomainError;
 
@@ -45,9 +46,8 @@ export function sellItem(
 	if (left <= 0) delete inventory[itemId];
 	else inventory[itemId] = left;
 	return ok({
-		...state,
+		...applyGoldIncome(state, content, gold),
 		inventory,
-		wallet: { ...state.wallet, gold: state.wallet.gold + gold },
 		stats: {
 			...state.stats,
 			totalGoldEarned: state.stats.totalGoldEarned + gold,

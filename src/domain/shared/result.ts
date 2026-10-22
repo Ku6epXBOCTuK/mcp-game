@@ -120,6 +120,18 @@ export function zoneLocked(
 	});
 }
 
+export function creditLimitExceeded(
+	limit: number,
+	requested: number,
+): Result<never, DomainError> {
+	return err({
+		code: "CreditLimitExceeded",
+		message: `Кредит превышает лимит банка: доступно ${limit}, запрошено ${requested}. Лимит растёт с уровнем апгрейда "bank".`,
+		limit,
+		requested,
+	});
+}
+
 export function monsterUnknown(monsterId: string): Result<never, DomainError> {
 	return err({
 		code: "MonsterUnknown",

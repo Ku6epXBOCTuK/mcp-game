@@ -115,6 +115,9 @@ export type EventContent = {
 export type BalanceContent = {
 	upgradeCostScale?: Record<string, number> | undefined;
 	prestigeGoldThreshold?: number | undefined;
+	bankCreditLimitPerLevel?: number | undefined;
+	bankInterestPerHour?: number | undefined;
+	bankRepayShareOfIncome?: number | undefined;
 	skillRateK: number;
 	xpBase: number;
 	xpExponent: number;

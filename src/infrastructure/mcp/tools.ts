@@ -215,7 +215,10 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_bank",
 		title: "Банк",
 		description:
-			"Операции банка: deposit, withdraw, credit, repay (amount в золоте).",
+			"Операции банка: deposit, withdraw, credit, repay (amount в золоте). " +
+			"credit — кредит под процент: лимит = уровень апгрейда bank × лимит на уровень, " +
+			"на долг начисляется процент, а доля дохода автоматически идёт на погашение. " +
+			"repay — досрочное погашение долга из кошелька.",
 		scopes: ["play"],
 		inputSchema: z.object({
 			command: z.enum(["deposit", "withdraw", "credit", "repay"]),

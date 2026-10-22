@@ -8,6 +8,7 @@ import {
 import type { GameContent } from "../content/types.ts";
 import type { GameState, QuestId, SkillId } from "./types.ts";
 import { questCompleted } from "./quests.ts";
+import { applyGoldIncome } from "./bank.ts";
 
 type DomainError = import("../shared/errors.ts").DomainError;
 
@@ -30,14 +31,14 @@ export function claimQuest(
 	if (!questCompleted(state, quest)) return questNotCompleted(questId);
 
 	const inventory = { ...state.inventory };
-	let gold = state.wallet.gold;
+	let goldReward = 0;
 	const skills = { ...state.skills };
 	const upgrades = { ...state.upgrades };
 
 	for (const reward of quest.rewards) {
 		switch (reward.kind) {
 			case "gold":
-				gold += reward.qty;
+				goldReward += reward.qty;
 				break;
 			case "item":
 				inventory[reward.id] = (inventory[reward.id] ?? 0) + reward.qty;
@@ -59,8 +60,7 @@ export function claimQuest(
 	}
 
 	return ok({
-		...state,
-		wallet: { ...state.wallet, gold },
+		...applyGoldIncome(state, content, goldReward),
 		inventory,
 		skills,
 		upgrades,

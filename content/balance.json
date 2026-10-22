@@ -14,6 +14,9 @@
 		"tent": 0.5
 	},
 	"prestigeGoldThreshold": 974,
+	"bankCreditLimitPerLevel": 500,
+	"bankInterestPerHour": 0.15,
+	"bankRepayShareOfIncome": 0.5,
 	"skillRateK": 0.1,
 	"xpBase": 15,
 	"xpExponent": 1.4,

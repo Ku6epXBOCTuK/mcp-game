@@ -1,6 +1,7 @@
 import { productionRate, xpToNext } from "../shared/curves.ts";
 import { nextRandom } from "../shared/rng.ts";
 import { refreshMarket } from "./market.ts";
+import { accrueInterest, applyGoldIncome } from "./bank.ts";
 import type { GameContent, EventContent } from "../content/types.ts";
 import type { ActiveAction, ActiveEvent, GameState, SkillId } from "./types.ts";
 
@@ -377,6 +378,8 @@ export function tick(state: GameState, options: TickOptions): GameState {
 		}
 	}
 
+	next = accrueInterest(next, content, elapsed);
+
 	const income = passiveIncomePerSec(next, content);
 	if (income > 0) {
 		const prestigeGold = Math.pow(
@@ -384,10 +387,7 @@ export function tick(state: GameState, options: TickOptions): GameState {
 			balance.prestigeGoldExponent,
 		);
 		const gold = income * elapsed * multipliers.gold * prestigeGold;
-		next = {
-			...next,
-			wallet: { ...next.wallet, gold: next.wallet.gold + gold },
-		};
+		next = applyGoldIncome(next, content, gold);
 	}
 
 	const minutes = elapsed / 60;

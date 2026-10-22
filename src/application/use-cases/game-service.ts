@@ -268,7 +268,12 @@ export class GameService {
 		const context = await this.loadContext(playerId);
 		if (context.isErr()) return err(context.error);
 		const now = this.clock.now();
-		const result = bankOperation(context.value.state, operation, now);
+		const result = bankOperation(
+			context.value.state,
+			context.value.content,
+			operation,
+			now,
+		);
 		if (result.isErr()) {
 			await this.logError(playerId, now, result.error);
 			return err(result.error);
@@ -278,7 +283,10 @@ export class GameService {
 			{
 				ts: now,
 				type: `bank.${operation.kind}`,
-				payload: { amount: operation.amount },
+				payload: {
+					amount: operation.amount,
+					credit: result.value.bank.credit,
+				},
 			},
 		]);
 		return ok(next);

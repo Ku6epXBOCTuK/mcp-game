@@ -4,6 +4,7 @@ import {
 	ok,
 	err,
 	alreadyActing,
+	creditLimitExceeded,
 	insufficientFunds,
 	itemUnknown,
 	noActiveAction,
@@ -14,6 +15,7 @@ import {
 	zoneLocked,
 } from "../shared/result.ts";
 import type { GameContent } from "../content/types.ts";
+import { creditLimit } from "./bank.ts";
 import type {
 	ActiveAction,
 	GameState,
@@ -198,6 +200,7 @@ export type BankOperation =
 
 export function bankOperation(
 	state: GameState,
+	content: GameContent,
 	operation: BankOperation,
 	now: number,
 ): Result<GameState, DomainError> {
@@ -234,6 +237,14 @@ export function bankOperation(
 	}
 
 	if (operation.kind === "credit") {
+		const limit = creditLimit(state, content);
+		const available = Math.max(0, limit - state.bank.credit);
+		if (limit <= 0) {
+			return creditLimitExceeded(0, amount);
+		}
+		if (amount > available) {
+			return creditLimitExceeded(limit, state.bank.credit + amount);
+		}
 		return ok({
 			...state,
 			wallet: { ...state.wallet, gold: state.wallet.gold + amount },
@@ -242,14 +253,22 @@ export function bankOperation(
 		});
 	}
 
-	if (state.wallet.gold < amount) {
-		return insufficientFunds(amount, state.wallet.gold);
+	const debt = state.bank.credit;
+	if (debt <= 0) {
+		return err({
+			code: "NotSupported",
+			message: "Кредит не выдан: погашать нечего.",
+			feature: "bank:repay",
+		});
 	}
-	const repaid = Math.min(amount, state.bank.credit);
+	const required = Math.min(amount, debt);
+	if (state.wallet.gold < required) {
+		return insufficientFunds(required, state.wallet.gold);
+	}
 	return ok({
 		...state,
-		wallet: { ...state.wallet, gold: state.wallet.gold - repaid },
-		bank: { ...state.bank, credit: state.bank.credit - repaid },
+		wallet: { ...state.wallet, gold: state.wallet.gold - required },
+		bank: { ...state.bank, credit: debt - required },
 		updatedAt: now,
 	});
 }
