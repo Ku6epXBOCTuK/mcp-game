@@ -540,3 +540,19 @@ snapshots(player_id, ts, state)        -- откат
   HTTP-ошибку;
 - §4.1 — `game_tick` в dev-режиме не ограничен лимитом `maxTickSec`, в обычном
   режиме тик обрезается лимитом.
+
+### Ревизия 6 — 2026-10-22 (этап 5, HTTP-транспорт)
+
+- §4 — HTTP-сервер на `node:http` (`src/infrastructure/http/server.ts`),
+  единственный маршрут `/mcp`; адаптер `node:http ⇄ Request/Response`
+  (`src/infrastructure/http/node-adapter.ts`), лимит тела 4 МБ → 413;
+- §11.2 — per-request сервер игрока собирается через `createMcpHandler` из
+  `@modelcontextprotocol/server` (фабрика получает `ctx.authInfo`: `clientId` =
+  playerId, `scopes` = набор прав), а не через `mcp-handler`:
+  `createMcpRouteHandler` вызывает `initializeServer` один раз на сервер и не
+  подходит для per-player сессий;
+- §11.2 — ключ принимается как `Authorization: Bearer`, фолбэк `X-API-Key`,
+  `?key=` — только в dev-режиме; без ключа → 401, с неверным или отозванным →
+  403;
+- §8 — при первом старте сервер создаёт дефолтного игрока и печатает API-ключ
+  один раз; ключи выдаются также через `npm run keys -- create`.
