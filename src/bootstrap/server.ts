@@ -9,6 +9,7 @@ import { SqliteApiKeyRepository } from "../infrastructure/persistence/api-key-re
 import { FileContentRepository } from "../infrastructure/content/loader.ts";
 import { ApiKeyService } from "../infrastructure/identity/api-key-service.ts";
 import { createMcpRoute } from "../infrastructure/http/mcp-route.ts";
+import { createDebugRoute } from "../infrastructure/http/debug-route.ts";
 import { createHttpServer } from "../infrastructure/http/server.ts";
 import { loadConfig } from "./config.ts";
 
@@ -49,8 +50,16 @@ export async function startServer(): Promise<RunningServer> {
 		dev: config.dev,
 		now: () => clock.now(),
 	});
+	const debugRoute = createDebugRoute({
+		games: gamesService,
+		keys: keyService,
+		dev: config.dev,
+		now: () => clock.now(),
+	});
 	const http = createHttpServer({
 		route,
+		debug: debugRoute,
+		publicDir: config.publicDir,
 		host: config.host,
 		port: config.port,
 	});
@@ -76,6 +85,7 @@ export async function startServer(): Promise<RunningServer> {
 	}
 
 	console.log(`MCP: http://${config.host}:${config.port}/mcp`);
+	console.log(`Дебаг: http://${config.host}:${config.port}/`);
 	console.log(`Игрок: ${player.id}`);
 
 	return {

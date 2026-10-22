@@ -382,6 +382,18 @@ export class GameService {
 		return this.games.listEvents(playerId, limit);
 	}
 
+	async firstPlayerId(): Promise<PlayerId | null> {
+		const players = await this.players.list();
+		return players[0]?.id ?? null;
+	}
+
+	async describePlayer(
+		playerId: PlayerId,
+	): Promise<{ id: PlayerId; label: string } | null> {
+		const player = await this.players.findById(playerId);
+		return player ? { id: player.id, label: player.label } : null;
+	}
+
 	private async logError(
 		playerId: PlayerId,
 		ts: number,

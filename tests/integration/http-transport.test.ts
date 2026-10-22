@@ -9,9 +9,11 @@ import { FileContentRepository } from "../../src/infrastructure/content/loader.t
 import { ApiKeyService } from "../../src/infrastructure/identity/api-key-service.ts";
 import { GameService } from "../../src/application/use-cases/game-service.ts";
 import { createMcpRoute } from "../../src/infrastructure/http/mcp-route.ts";
+import { createDebugRoute } from "../../src/infrastructure/http/debug-route.ts";
 import { createHttpServer } from "../../src/infrastructure/http/server.ts";
 
 const CONTENT_DIR = join(import.meta.dirname, "..", "..", "content");
+const PUBLIC_DIR = join(import.meta.dirname, "..", "..", "public");
 
 type Harness = {
 	base: string;
@@ -37,7 +39,19 @@ async function startHarness(): Promise<Harness> {
 		dev: true,
 		now: () => 1_000_000,
 	});
-	const http = createHttpServer({ route, host: "127.0.0.1", port: 0 });
+	const debug = createDebugRoute({
+		games: gameService,
+		keys: keyService,
+		dev: true,
+		now: () => 1_000_000,
+	});
+	const http = createHttpServer({
+		route,
+		debug,
+		publicDir: PUBLIC_DIR,
+		host: "127.0.0.1",
+		port: 0,
+	});
 	await http.listen();
 	const address = http.server.address();
 	const port = typeof address === "object" && address ? address.port : 0;

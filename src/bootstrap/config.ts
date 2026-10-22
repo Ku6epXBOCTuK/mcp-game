@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 export type ServerConfig = {
 	dbPath: string;
 	contentDir: string;
+	publicDir: string;
 	host: string;
 	port: number;
 	dev: boolean;
@@ -22,6 +23,7 @@ export function loadConfig(): ServerConfig {
 		contentDir: resolve(
 			envString("MCPG_CONTENT_DIR", resolve(root, "content")),
 		),
+		publicDir: resolve(envString("MCPG_PUBLIC_DIR", resolve(root, "public"))),
 		host: envString("MCPG_HOST", "127.0.0.1"),
 		port: Number(envString("MCPG_PORT", "3000")),
 		dev: envString("MCPG_ENV", "development") !== "production",
