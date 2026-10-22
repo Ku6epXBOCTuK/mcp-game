@@ -1,61 +1,59 @@
 [
-  {
-    "id": "harvest_festival",
-    "name": "Картофельный урожай",
-    "durationSec": 600,
-    "modifiers": [
-      { "kind": "productionMultiplier", "target": "chopping", "value": 1.5 },
-      { "kind": "productionMultiplier", "target": "cooking", "value": 1.25 }
-    ],
-    "weight": 1.0
-  },
-  {
-    "id": "market_fair",
-    "name": "Ярмарка",
-    "durationSec": 900,
-    "modifiers": [
-      { "kind": "goldMultiplier", "value": 1.35 },
-      { "kind": "xpMultiplier", "value": 1.1 }
-    ],
-    "weight": 1.0
-  },
-  {
-    "id": "wolf_raid",
-    "name": "Налёт волков",
-    "durationSec": 420,
-    "modifiers": [
-      { "kind": "xpMultiplier", "value": 1.4 },
-      { "kind": "productionMultiplier", "target": "hunting", "value": 0.8 }
-    ],
-    "weight": 0.8
-  },
-  {
-    "id": "miners_strike",
-    "name": "Забастовка шахтёров",
-    "durationSec": 480,
-    "modifiers": [
-      { "kind": "productionMultiplier", "target": "mining", "value": 0.75 },
-      { "kind": "goldMultiplier", "value": 1.2 }
-    ],
-    "weight": 0.7
-  },
-  {
-    "id": "meteor_shower",
-    "name": "Метеорный дождь",
-    "durationSec": 540,
-    "modifiers": [
-      { "kind": "xpMultiplier", "value": 1.25 },
-      { "kind": "skillLevel", "target": "magic", "value": 1 }
-    ],
-    "weight": 0.5
-  },
-  {
-    "id": "golden_hour",
-    "name": "Золотой час",
-    "durationSec": 360,
-    "modifiers": [
-      { "kind": "goldMultiplier", "value": 2.0 }
-    ],
-    "weight": 0.4
-  }
+	{
+		"id": "harvest_festival",
+		"name": "Картофельный урожай",
+		"durationSec": 600,
+		"modifiers": [
+			{ "kind": "productionMultiplier", "target": "chopping", "value": 1.5 },
+			{ "kind": "productionMultiplier", "target": "cooking", "value": 1.25 }
+		],
+		"weight": 1.0
+	},
+	{
+		"id": "market_fair",
+		"name": "Ярмарка",
+		"durationSec": 900,
+		"modifiers": [
+			{ "kind": "goldMultiplier", "value": 1.35 },
+			{ "kind": "xpMultiplier", "value": 1.1 }
+		],
+		"weight": 1.0
+	},
+	{
+		"id": "wolf_raid",
+		"name": "Налёт волков",
+		"durationSec": 420,
+		"modifiers": [
+			{ "kind": "xpMultiplier", "value": 1.4 },
+			{ "kind": "productionMultiplier", "target": "hunting", "value": 0.8 }
+		],
+		"weight": 0.8
+	},
+	{
+		"id": "miners_strike",
+		"name": "Забастовка шахтёров",
+		"durationSec": 480,
+		"modifiers": [
+			{ "kind": "productionMultiplier", "target": "mining", "value": 0.75 },
+			{ "kind": "goldMultiplier", "value": 1.2 }
+		],
+		"weight": 0.7
+	},
+	{
+		"id": "meteor_shower",
+		"name": "Метеорный дождь",
+		"durationSec": 540,
+		"modifiers": [
+			{ "kind": "xpMultiplier", "value": 1.25 },
+			{ "kind": "skillLevel", "target": "magic", "value": 1 }
+		],
+		"weight": 0.5
+	},
+	{
+		"id": "golden_hour",
+		"name": "Золотой час",
+		"durationSec": 360,
+		"modifiers": [{ "kind": "goldMultiplier", "value": 2.0 }],
+		"weight": 0.4
+	}
 ]

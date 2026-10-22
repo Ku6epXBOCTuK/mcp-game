@@ -1,66 +1,66 @@
 [
-  {
-    "id": "chopping",
-    "name": "Рубка",
-    "description": "Добыча дерева: рубка леса, заготовка брёвен и дров.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 1,
-    "icon": "axe"
-  },
-  {
-    "id": "mining",
-    "name": "Добыча",
-    "description": "Добыча камня и руды: шахты, каменоломни, плавильные рудники.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 1,
-    "icon": "pickaxe"
-  },
-  {
-    "id": "hunting",
-    "name": "Охота",
-    "description": "Охота на животных: добыча мяса, шкур и жира.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 1,
-    "icon": "bow"
-  },
-  {
-    "id": "crafting",
-    "name": "Ремесло",
-    "description": "Переработка сырья: доски, инструменты, верёвки, кожаные изделия.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 2,
-    "icon": "hammer"
-  },
-  {
-    "id": "cooking",
-    "name": "Готовка",
-    "description": "Приготовление еды из ингредиентов: хлеб, рагу, пироги, зелья еды.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 4,
-    "icon": "pot"
-  },
-  {
-    "id": "trading",
-    "name": "Торговля",
-    "description": "Рынок, лавка и банк: продажа, закупка, депозиты, кредиты.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 5,
-    "icon": "scale"
-  },
-  {
-    "id": "combat",
-    "name": "Бой",
-    "description": "Сражения с монстрами: опыт, репутация, дроп и зона риска.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 3,
-    "icon": "sword"
-  },
-  {
-    "id": "magic",
-    "name": "Магия",
-    "description": "Заклинания: усиления, зелья и пассивные баффы.",
-    "xpCurve": { "base": 15, "exponent": 1.4 },
-    "unlockLevel": 8,
-    "icon": "wand"
-  }
+	{
+		"id": "chopping",
+		"name": "Рубка",
+		"description": "Добыча дерева: рубка леса, заготовка брёвен и дров.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 1,
+		"icon": "axe"
+	},
+	{
+		"id": "mining",
+		"name": "Добыча",
+		"description": "Добыча камня и руды: шахты, каменоломни, плавильные рудники.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 1,
+		"icon": "pickaxe"
+	},
+	{
+		"id": "hunting",
+		"name": "Охота",
+		"description": "Охота на животных: добыча мяса, шкур и жира.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 1,
+		"icon": "bow"
+	},
+	{
+		"id": "crafting",
+		"name": "Ремесло",
+		"description": "Переработка сырья: доски, инструменты, верёвки, кожаные изделия.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 2,
+		"icon": "hammer"
+	},
+	{
+		"id": "cooking",
+		"name": "Готовка",
+		"description": "Приготовление еды из ингредиентов: хлеб, рагу, пироги, зелья еды.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 4,
+		"icon": "pot"
+	},
+	{
+		"id": "trading",
+		"name": "Торговля",
+		"description": "Рынок, лавка и банк: продажа, закупка, депозиты, кредиты.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 5,
+		"icon": "scale"
+	},
+	{
+		"id": "combat",
+		"name": "Бой",
+		"description": "Сражения с монстрами: опыт, репутация, дроп и зона риска.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 3,
+		"icon": "sword"
+	},
+	{
+		"id": "magic",
+		"name": "Магия",
+		"description": "Заклинания: усиления, зелья и пассивные баффы.",
+		"xpCurve": { "base": 15, "exponent": 1.4 },
+		"unlockLevel": 8,
+		"icon": "wand"
+	}
 ]

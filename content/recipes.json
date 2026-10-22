@@ -1,422 +1,506 @@
 [
-  {
-    "id": "chop_wood",
-    "output": { "item": "wood", "qty": 3 },
-    "inputs": [],
-    "skill": "chopping",
-    "skillLevel": 1,
-    "timeSec": 4
-  },
-  {
-    "id": "chop_log",
-    "output": { "item": "log", "qty": 1 },
-    "inputs": [{ "item": "wood", "qty": 4 }],
-    "skill": "chopping",
-    "skillLevel": 5,
-    "timeSec": 8
-  },
-  {
-    "id": "gather_stick",
-    "output": { "item": "stick", "qty": 2 },
-    "inputs": [],
-    "skill": "chopping",
-    "skillLevel": 2,
-    "timeSec": 3
-  },
-  {
-    "id": "make_plank",
-    "output": { "item": "plank", "qty": 1 },
-    "inputs": [{ "item": "log", "qty": 2 }],
-    "skill": "crafting",
-    "skillLevel": 1,
-    "timeSec": 6
-  },
-  {
-    "id": "make_string",
-    "output": { "item": "string", "qty": 1 },
-    "inputs": [{ "item": "grass_fiber", "qty": 3 }],
-    "skill": "crafting",
-    "skillLevel": 2,
-    "timeSec": 5
-  },
-  {
-    "id": "make_charcoal",
-    "output": { "item": "charcoal", "qty": 1 },
-    "inputs": [{ "item": "log", "qty": 1 }],
-    "skill": "crafting",
-    "skillLevel": 4,
-    "timeSec": 12
-  },
-  {
-    "id": "make_axe",
-    "output": { "item": "axe", "qty": 1 },
-    "inputs": [{ "item": "stick", "qty": 3 }, { "item": "iron_ingot", "qty": 2 }],
-    "skill": "crafting",
-    "skillLevel": 6,
-    "timeSec": 20
-  },
-  {
-    "id": "make_pickaxe",
-    "output": { "item": "pickaxe", "qty": 1 },
-    "inputs": [{ "item": "stick", "qty": 3 }, { "item": "iron_ingot", "qty": 3 }],
-    "skill": "crafting",
-    "skillLevel": 6,
-    "timeSec": 22
-  },
-  {
-    "id": "make_hammer",
-    "output": { "item": "hammer", "qty": 1 },
-    "inputs": [{ "item": "stick", "qty": 2 }, { "item": "stone", "qty": 4 }],
-    "skill": "crafting",
-    "skillLevel": 3,
-    "timeSec": 10
-  },
-  {
-    "id": "make_saw",
-    "output": { "item": "saw", "qty": 1 },
-    "inputs": [{ "item": "plank", "qty": 4 }, { "item": "iron_ingot", "qty": 2 }],
-    "skill": "crafting",
-    "skillLevel": 12,
-    "timeSec": 40
-  },
-  {
-    "id": "make_knife",
-    "output": { "item": "knife", "qty": 1 },
-    "inputs": [{ "item": "stick", "qty": 1 }, { "item": "iron_ingot", "qty": 1 }],
-    "skill": "crafting",
-    "skillLevel": 5,
-    "timeSec": 14
-  },
-  {
-    "id": "make_campfire",
-    "output": { "item": "campfire", "qty": 1 },
-    "inputs": [{ "item": "stick", "qty": 5 }, { "item": "stone", "qty": 5 }],
-    "skill": "crafting",
-    "skillLevel": 4,
-    "timeSec": 18
-  },
-  {
-    "id": "make_lantern",
-    "output": { "item": "lantern", "qty": 1 },
-    "inputs": [{ "item": "iron_ingot", "qty": 2 }, { "item": "fat", "qty": 2 }],
-    "skill": "crafting",
-    "skillLevel": 10,
-    "timeSec": 35
-  },
-  {
-    "id": "make_workbench",
-    "output": { "item": "workbench", "qty": 1 },
-    "inputs": [{ "item": "plank", "qty": 8 }, { "item": "iron_ingot", "qty": 2 }],
-    "skill": "crafting",
-    "skillLevel": 15,
-    "timeSec": 60
-  },
-  {
-    "id": "make_chest",
-    "output": { "item": "chest", "qty": 1 },
-    "inputs": [{ "item": "plank", "qty": 10 }, { "item": "iron_ingot", "qty": 4 }],
-    "skill": "crafting",
-    "skillLevel": 18,
-    "timeSec": 75
-  },
-  {
-    "id": "mine_stone",
-    "output": { "item": "stone", "qty": 3 },
-    "inputs": [],
-    "skill": "mining",
-    "skillLevel": 1,
-    "timeSec": 5
-  },
-  {
-    "id": "mine_iron_ore",
-    "output": { "item": "iron_ore", "qty": 2 },
-    "inputs": [],
-    "skill": "mining",
-    "skillLevel": 8,
-    "timeSec": 12
-  },
-  {
-    "id": "mine_copper_ore",
-    "output": { "item": "copper_ore", "qty": 2 },
-    "inputs": [],
-    "skill": "mining",
-    "skillLevel": 5,
-    "timeSec": 9
-  },
-  {
-    "id": "mine_coal",
-    "output": { "item": "coal", "qty": 2 },
-    "inputs": [],
-    "skill": "mining",
-    "skillLevel": 10,
-    "timeSec": 14
-  },
-  {
-    "id": "mine_gold_ore",
-    "output": { "item": "gold_ore", "qty": 1 },
-    "inputs": [],
-    "skill": "mining",
-    "skillLevel": 20,
-    "timeSec": 25
-  },
-  {
-    "id": "smelt_iron",
-    "output": { "item": "iron_ingot", "qty": 1 },
-    "inputs": [{ "item": "iron_ore", "qty": 2 }, { "item": "coal", "qty": 1 }],
-    "skill": "mining",
-    "skillLevel": 12,
-    "timeSec": 20
-  },
-  {
-    "id": "smelt_copper",
-    "output": { "item": "copper_ingot", "qty": 1 },
-    "inputs": [{ "item": "copper_ore", "qty": 2 }, { "item": "coal", "qty": 1 }],
-    "skill": "mining",
-    "skillLevel": 9,
-    "timeSec": 16
-  },
-  {
-    "id": "smelt_gold",
-    "output": { "item": "gold_ingot", "qty": 1 },
-    "inputs": [{ "item": "gold_ore", "qty": 2 }, { "item": "coal", "qty": 2 }],
-    "skill": "mining",
-    "skillLevel": 22,
-    "timeSec": 30
-  },
-  {
-    "id": "make_steel",
-    "output": { "item": "steel_ingot", "qty": 1 },
-    "inputs": [{ "item": "iron_ingot", "qty": 1 }, { "item": "charcoal", "qty": 2 }],
-    "skill": "mining",
-    "skillLevel": 18,
-    "timeSec": 40
-  },
-  {
-    "id": "make_glass",
-    "output": { "item": "glass", "qty": 1 },
-    "inputs": [{ "item": "stone", "qty": 3 }, { "item": "charcoal", "qty": 1 }],
-    "skill": "mining",
-    "skillLevel": 16,
-    "timeSec": 35
-  },
-  {
-    "id": "hunt_meat",
-    "output": { "item": "meat", "qty": 2 },
-    "inputs": [],
-    "skill": "hunting",
-    "skillLevel": 1,
-    "timeSec": 6
-  },
-  {
-    "id": "hunt_pelt",
-    "output": { "item": "pelt", "qty": 1 },
-    "inputs": [],
-    "skill": "hunting",
-    "skillLevel": 4,
-    "timeSec": 10
-  },
-  {
-    "id": "hunt_bone",
-    "output": { "item": "bone", "qty": 2 },
-    "inputs": [],
-    "skill": "hunting",
-    "skillLevel": 7,
-    "timeSec": 13
-  },
-  {
-    "id": "hunt_claw",
-    "output": { "item": "claw", "qty": 1 },
-    "inputs": [],
-    "skill": "hunting",
-    "skillLevel": 14,
-    "timeSec": 22
-  },
-  {
-    "id": "hunt_feather",
-    "output": { "item": "feather", "qty": 2 },
-    "inputs": [],
-    "skill": "hunting",
-    "skillLevel": 6,
-    "timeSec": 11
-  },
-  {
-    "id": "make_hide",
-    "output": { "item": "hide", "qty": 1 },
-    "inputs": [{ "item": "pelt", "qty": 2 }, { "item": "salt", "qty": 1 }],
-    "skill": "hunting",
-    "skillLevel": 9,
-    "timeSec": 18
-  },
-  {
-    "id": "make_bow",
-    "output": { "item": "bow", "qty": 1 },
-    "inputs": [{ "item": "stick", "qty": 4 }, { "item": "string", "qty": 2 }],
-    "skill": "hunting",
-    "skillLevel": 8,
-    "timeSec": 24
-  },
-  {
-    "id": "make_spear",
-    "output": { "item": "spear", "qty": 1 },
-    "inputs": [{ "item": "stick", "qty": 2 }, { "item": "knife", "qty": 1 }],
-    "skill": "hunting",
-    "skillLevel": 11,
-    "timeSec": 28
-  },
-  {
-    "id": "make_quiver",
-    "output": { "item": "quiver", "qty": 1 },
-    "inputs": [{ "item": "hide", "qty": 2 }, { "item": "feather", "qty": 4 }],
-    "skill": "hunting",
-    "skillLevel": 13,
-    "timeSec": 38
-  },
-  {
-    "id": "make_sword",
-    "output": { "item": "sword", "qty": 1 },
-    "inputs": [{ "item": "steel_ingot", "qty": 3 }, { "item": "plank", "qty": 1 }],
-    "skill": "crafting",
-    "skillLevel": 20,
-    "timeSec": 90
-  },
-  {
-    "id": "make_shield",
-    "output": { "item": "shield", "qty": 1 },
-    "inputs": [{ "item": "plank", "qty": 3 }, { "item": "iron_ingot", "qty": 2 }],
-    "skill": "crafting",
-    "skillLevel": 14,
-    "timeSec": 50
-  },
-  {
-    "id": "weave_silk",
-    "output": { "item": "silk", "qty": 1 },
-    "inputs": [{ "item": "string", "qty": 4 }],
-    "skill": "crafting",
-    "skillLevel": 16,
-    "timeSec": 45
-  },
-  {
-    "id": "mill_flour",
-    "output": { "item": "flour", "qty": 1 },
-    "inputs": [{ "item": "berry", "qty": 6 }],
-    "skill": "cooking",
-    "skillLevel": 1,
-    "timeSec": 8
-  },
-  {
-    "id": "cook_bread",
-    "output": { "item": "bread", "qty": 2 },
-    "inputs": [{ "item": "flour", "qty": 2 }],
-    "skill": "cooking",
-    "skillLevel": 3,
-    "timeSec": 15
-  },
-  {
-    "id": "cook_roasted_meat",
-    "output": { "item": "roasted_meat", "qty": 1 },
-    "inputs": [{ "item": "meat", "qty": 2 }],
-    "skill": "cooking",
-    "skillLevel": 2,
-    "timeSec": 12
-  },
-  {
-    "id": "cook_stew",
-    "output": { "item": "stew", "qty": 1 },
-    "inputs": [{ "item": "roasted_meat", "qty": 1 }, { "item": "mushroom", "qty": 3 }],
-    "skill": "cooking",
-    "skillLevel": 8,
-    "timeSec": 30
-  },
-  {
-    "id": "cook_pie",
-    "output": { "item": "pie", "qty": 1 },
-    "inputs": [
-      { "item": "flour", "qty": 3 },
-      { "item": "roasted_meat", "qty": 2 },
-      { "item": "berry", "qty": 4 }
-    ],
-    "skill": "cooking",
-    "skillLevel": 15,
-    "timeSec": 55
-  },
-  {
-    "id": "make_cheese",
-    "output": { "item": "cheese", "qty": 1 },
-    "inputs": [{ "item": "milk", "qty": 1 }],
-    "skill": "cooking",
-    "skillLevel": 6,
-    "timeSec": 25
-  },
-  {
-    "id": "brew_beer",
-    "output": { "item": "beer", "qty": 1 },
-    "inputs": [{ "item": "berry", "qty": 8 }, { "item": "flour", "qty": 1 }],
-    "skill": "cooking",
-    "skillLevel": 10,
-    "timeSec": 36
-  },
-  {
-    "id": "collect_herb",
-    "output": { "item": "herb", "qty": 2 },
-    "inputs": [],
-    "skill": "magic",
-    "skillLevel": 1,
-    "timeSec": 7
-  },
-  {
-    "id": "collect_mushroom",
-    "output": { "item": "mushroom", "qty": 2 },
-    "inputs": [],
-    "skill": "magic",
-    "skillLevel": 1,
-    "timeSec": 7
-  },
-  {
-    "id": "make_potion_health",
-    "output": { "item": "potion_health", "qty": 1 },
-    "inputs": [{ "item": "herb", "qty": 3 }, { "item": "berry", "qty": 2 }],
-    "skill": "magic",
-    "skillLevel": 5,
-    "timeSec": 20
-  },
-  {
-    "id": "make_potion_strength",
-    "output": { "item": "potion_strength", "qty": 1 },
-    "inputs": [{ "item": "herb", "qty": 4 }, { "item": "claw", "qty": 1 }],
-    "skill": "magic",
-    "skillLevel": 12,
-    "timeSec": 40
-  },
-  {
-    "id": "make_elixir",
-    "output": { "item": "elixir", "qty": 1 },
-    "inputs": [{ "item": "potion_strength", "qty": 1 }, { "item": "rune", "qty": 1 }],
-    "skill": "magic",
-    "skillLevel": 20,
-    "timeSec": 80
-  },
-  {
-    "id": "make_rune",
-    "output": { "item": "rune", "qty": 1 },
-    "inputs": [{ "item": "stone", "qty": 5 }, { "item": "silver_ore", "qty": 1 }],
-    "skill": "magic",
-    "skillLevel": 9,
-    "timeSec": 30
-  },
-  {
-    "id": "make_scroll",
-    "output": { "item": "scroll", "qty": 1 },
-    "inputs": [{ "item": "hide", "qty": 1 }, { "item": "rune", "qty": 1 }],
-    "skill": "magic",
-    "skillLevel": 11,
-    "timeSec": 35
-  },
-  {
-    "id": "extract_venom",
-    "output": { "item": "venom", "qty": 1 },
-    "inputs": [{ "item": "claw", "qty": 2 }, { "item": "mushroom", "qty": 2 }],
-    "skill": "magic",
-    "skillLevel": 14,
-    "timeSec": 45
-  }
+	{
+		"id": "chop_wood",
+		"output": { "item": "wood", "qty": 3 },
+		"inputs": [],
+		"skill": "chopping",
+		"skillLevel": 1,
+		"timeSec": 4
+	},
+	{
+		"id": "chop_log",
+		"output": { "item": "log", "qty": 1 },
+		"inputs": [{ "item": "wood", "qty": 4 }],
+		"skill": "chopping",
+		"skillLevel": 5,
+		"timeSec": 8
+	},
+	{
+		"id": "gather_stick",
+		"output": { "item": "stick", "qty": 2 },
+		"inputs": [],
+		"skill": "chopping",
+		"skillLevel": 2,
+		"timeSec": 3
+	},
+	{
+		"id": "make_plank",
+		"output": { "item": "plank", "qty": 1 },
+		"inputs": [{ "item": "log", "qty": 2 }],
+		"skill": "crafting",
+		"skillLevel": 1,
+		"timeSec": 6
+	},
+	{
+		"id": "make_string",
+		"output": { "item": "string", "qty": 1 },
+		"inputs": [{ "item": "grass_fiber", "qty": 3 }],
+		"skill": "crafting",
+		"skillLevel": 2,
+		"timeSec": 5
+	},
+	{
+		"id": "make_charcoal",
+		"output": { "item": "charcoal", "qty": 1 },
+		"inputs": [{ "item": "log", "qty": 1 }],
+		"skill": "crafting",
+		"skillLevel": 4,
+		"timeSec": 12
+	},
+	{
+		"id": "make_axe",
+		"output": { "item": "axe", "qty": 1 },
+		"inputs": [
+			{ "item": "stick", "qty": 3 },
+			{ "item": "iron_ingot", "qty": 2 }
+		],
+		"skill": "crafting",
+		"skillLevel": 6,
+		"timeSec": 20
+	},
+	{
+		"id": "make_pickaxe",
+		"output": { "item": "pickaxe", "qty": 1 },
+		"inputs": [
+			{ "item": "stick", "qty": 3 },
+			{ "item": "iron_ingot", "qty": 3 }
+		],
+		"skill": "crafting",
+		"skillLevel": 6,
+		"timeSec": 22
+	},
+	{
+		"id": "make_hammer",
+		"output": { "item": "hammer", "qty": 1 },
+		"inputs": [
+			{ "item": "stick", "qty": 2 },
+			{ "item": "stone", "qty": 4 }
+		],
+		"skill": "crafting",
+		"skillLevel": 3,
+		"timeSec": 10
+	},
+	{
+		"id": "make_saw",
+		"output": { "item": "saw", "qty": 1 },
+		"inputs": [
+			{ "item": "plank", "qty": 4 },
+			{ "item": "iron_ingot", "qty": 2 }
+		],
+		"skill": "crafting",
+		"skillLevel": 12,
+		"timeSec": 40
+	},
+	{
+		"id": "make_knife",
+		"output": { "item": "knife", "qty": 1 },
+		"inputs": [
+			{ "item": "stick", "qty": 1 },
+			{ "item": "iron_ingot", "qty": 1 }
+		],
+		"skill": "crafting",
+		"skillLevel": 5,
+		"timeSec": 14
+	},
+	{
+		"id": "make_campfire",
+		"output": { "item": "campfire", "qty": 1 },
+		"inputs": [
+			{ "item": "stick", "qty": 5 },
+			{ "item": "stone", "qty": 5 }
+		],
+		"skill": "crafting",
+		"skillLevel": 4,
+		"timeSec": 18
+	},
+	{
+		"id": "make_lantern",
+		"output": { "item": "lantern", "qty": 1 },
+		"inputs": [
+			{ "item": "iron_ingot", "qty": 2 },
+			{ "item": "fat", "qty": 2 }
+		],
+		"skill": "crafting",
+		"skillLevel": 10,
+		"timeSec": 35
+	},
+	{
+		"id": "make_workbench",
+		"output": { "item": "workbench", "qty": 1 },
+		"inputs": [
+			{ "item": "plank", "qty": 8 },
+			{ "item": "iron_ingot", "qty": 2 }
+		],
+		"skill": "crafting",
+		"skillLevel": 15,
+		"timeSec": 60
+	},
+	{
+		"id": "make_chest",
+		"output": { "item": "chest", "qty": 1 },
+		"inputs": [
+			{ "item": "plank", "qty": 10 },
+			{ "item": "iron_ingot", "qty": 4 }
+		],
+		"skill": "crafting",
+		"skillLevel": 18,
+		"timeSec": 75
+	},
+	{
+		"id": "mine_stone",
+		"output": { "item": "stone", "qty": 3 },
+		"inputs": [],
+		"skill": "mining",
+		"skillLevel": 1,
+		"timeSec": 5
+	},
+	{
+		"id": "mine_iron_ore",
+		"output": { "item": "iron_ore", "qty": 2 },
+		"inputs": [],
+		"skill": "mining",
+		"skillLevel": 8,
+		"timeSec": 12
+	},
+	{
+		"id": "mine_copper_ore",
+		"output": { "item": "copper_ore", "qty": 2 },
+		"inputs": [],
+		"skill": "mining",
+		"skillLevel": 5,
+		"timeSec": 9
+	},
+	{
+		"id": "mine_coal",
+		"output": { "item": "coal", "qty": 2 },
+		"inputs": [],
+		"skill": "mining",
+		"skillLevel": 10,
+		"timeSec": 14
+	},
+	{
+		"id": "mine_gold_ore",
+		"output": { "item": "gold_ore", "qty": 1 },
+		"inputs": [],
+		"skill": "mining",
+		"skillLevel": 20,
+		"timeSec": 25
+	},
+	{
+		"id": "smelt_iron",
+		"output": { "item": "iron_ingot", "qty": 1 },
+		"inputs": [
+			{ "item": "iron_ore", "qty": 2 },
+			{ "item": "coal", "qty": 1 }
+		],
+		"skill": "mining",
+		"skillLevel": 12,
+		"timeSec": 20
+	},
+	{
+		"id": "smelt_copper",
+		"output": { "item": "copper_ingot", "qty": 1 },
+		"inputs": [
+			{ "item": "copper_ore", "qty": 2 },
+			{ "item": "coal", "qty": 1 }
+		],
+		"skill": "mining",
+		"skillLevel": 9,
+		"timeSec": 16
+	},
+	{
+		"id": "smelt_gold",
+		"output": { "item": "gold_ingot", "qty": 1 },
+		"inputs": [
+			{ "item": "gold_ore", "qty": 2 },
+			{ "item": "coal", "qty": 2 }
+		],
+		"skill": "mining",
+		"skillLevel": 22,
+		"timeSec": 30
+	},
+	{
+		"id": "make_steel",
+		"output": { "item": "steel_ingot", "qty": 1 },
+		"inputs": [
+			{ "item": "iron_ingot", "qty": 1 },
+			{ "item": "charcoal", "qty": 2 }
+		],
+		"skill": "mining",
+		"skillLevel": 18,
+		"timeSec": 40
+	},
+	{
+		"id": "make_glass",
+		"output": { "item": "glass", "qty": 1 },
+		"inputs": [
+			{ "item": "stone", "qty": 3 },
+			{ "item": "charcoal", "qty": 1 }
+		],
+		"skill": "mining",
+		"skillLevel": 16,
+		"timeSec": 35
+	},
+	{
+		"id": "hunt_meat",
+		"output": { "item": "meat", "qty": 2 },
+		"inputs": [],
+		"skill": "hunting",
+		"skillLevel": 1,
+		"timeSec": 6
+	},
+	{
+		"id": "hunt_pelt",
+		"output": { "item": "pelt", "qty": 1 },
+		"inputs": [],
+		"skill": "hunting",
+		"skillLevel": 4,
+		"timeSec": 10
+	},
+	{
+		"id": "hunt_bone",
+		"output": { "item": "bone", "qty": 2 },
+		"inputs": [],
+		"skill": "hunting",
+		"skillLevel": 7,
+		"timeSec": 13
+	},
+	{
+		"id": "hunt_claw",
+		"output": { "item": "claw", "qty": 1 },
+		"inputs": [],
+		"skill": "hunting",
+		"skillLevel": 14,
+		"timeSec": 22
+	},
+	{
+		"id": "hunt_feather",
+		"output": { "item": "feather", "qty": 2 },
+		"inputs": [],
+		"skill": "hunting",
+		"skillLevel": 6,
+		"timeSec": 11
+	},
+	{
+		"id": "make_hide",
+		"output": { "item": "hide", "qty": 1 },
+		"inputs": [
+			{ "item": "pelt", "qty": 2 },
+			{ "item": "salt", "qty": 1 }
+		],
+		"skill": "hunting",
+		"skillLevel": 9,
+		"timeSec": 18
+	},
+	{
+		"id": "make_bow",
+		"output": { "item": "bow", "qty": 1 },
+		"inputs": [
+			{ "item": "stick", "qty": 4 },
+			{ "item": "string", "qty": 2 }
+		],
+		"skill": "hunting",
+		"skillLevel": 8,
+		"timeSec": 24
+	},
+	{
+		"id": "make_spear",
+		"output": { "item": "spear", "qty": 1 },
+		"inputs": [
+			{ "item": "stick", "qty": 2 },
+			{ "item": "knife", "qty": 1 }
+		],
+		"skill": "hunting",
+		"skillLevel": 11,
+		"timeSec": 28
+	},
+	{
+		"id": "make_quiver",
+		"output": { "item": "quiver", "qty": 1 },
+		"inputs": [
+			{ "item": "hide", "qty": 2 },
+			{ "item": "feather", "qty": 4 }
+		],
+		"skill": "hunting",
+		"skillLevel": 13,
+		"timeSec": 38
+	},
+	{
+		"id": "make_sword",
+		"output": { "item": "sword", "qty": 1 },
+		"inputs": [
+			{ "item": "steel_ingot", "qty": 3 },
+			{ "item": "plank", "qty": 1 }
+		],
+		"skill": "crafting",
+		"skillLevel": 20,
+		"timeSec": 90
+	},
+	{
+		"id": "make_shield",
+		"output": { "item": "shield", "qty": 1 },
+		"inputs": [
+			{ "item": "plank", "qty": 3 },
+			{ "item": "iron_ingot", "qty": 2 }
+		],
+		"skill": "crafting",
+		"skillLevel": 14,
+		"timeSec": 50
+	},
+	{
+		"id": "weave_silk",
+		"output": { "item": "silk", "qty": 1 },
+		"inputs": [{ "item": "string", "qty": 4 }],
+		"skill": "crafting",
+		"skillLevel": 16,
+		"timeSec": 45
+	},
+	{
+		"id": "mill_flour",
+		"output": { "item": "flour", "qty": 1 },
+		"inputs": [{ "item": "berry", "qty": 6 }],
+		"skill": "cooking",
+		"skillLevel": 1,
+		"timeSec": 8
+	},
+	{
+		"id": "cook_bread",
+		"output": { "item": "bread", "qty": 2 },
+		"inputs": [{ "item": "flour", "qty": 2 }],
+		"skill": "cooking",
+		"skillLevel": 3,
+		"timeSec": 15
+	},
+	{
+		"id": "cook_roasted_meat",
+		"output": { "item": "roasted_meat", "qty": 1 },
+		"inputs": [{ "item": "meat", "qty": 2 }],
+		"skill": "cooking",
+		"skillLevel": 2,
+		"timeSec": 12
+	},
+	{
+		"id": "cook_stew",
+		"output": { "item": "stew", "qty": 1 },
+		"inputs": [
+			{ "item": "roasted_meat", "qty": 1 },
+			{ "item": "mushroom", "qty": 3 }
+		],
+		"skill": "cooking",
+		"skillLevel": 8,
+		"timeSec": 30
+	},
+	{
+		"id": "cook_pie",
+		"output": { "item": "pie", "qty": 1 },
+		"inputs": [
+			{ "item": "flour", "qty": 3 },
+			{ "item": "roasted_meat", "qty": 2 },
+			{ "item": "berry", "qty": 4 }
+		],
+		"skill": "cooking",
+		"skillLevel": 15,
+		"timeSec": 55
+	},
+	{
+		"id": "make_cheese",
+		"output": { "item": "cheese", "qty": 1 },
+		"inputs": [{ "item": "milk", "qty": 1 }],
+		"skill": "cooking",
+		"skillLevel": 6,
+		"timeSec": 25
+	},
+	{
+		"id": "brew_beer",
+		"output": { "item": "beer", "qty": 1 },
+		"inputs": [
+			{ "item": "berry", "qty": 8 },
+			{ "item": "flour", "qty": 1 }
+		],
+		"skill": "cooking",
+		"skillLevel": 10,
+		"timeSec": 36
+	},
+	{
+		"id": "collect_herb",
+		"output": { "item": "herb", "qty": 2 },
+		"inputs": [],
+		"skill": "magic",
+		"skillLevel": 1,
+		"timeSec": 7
+	},
+	{
+		"id": "collect_mushroom",
+		"output": { "item": "mushroom", "qty": 2 },
+		"inputs": [],
+		"skill": "magic",
+		"skillLevel": 1,
+		"timeSec": 7
+	},
+	{
+		"id": "make_potion_health",
+		"output": { "item": "potion_health", "qty": 1 },
+		"inputs": [
+			{ "item": "herb", "qty": 3 },
+			{ "item": "berry", "qty": 2 }
+		],
+		"skill": "magic",
+		"skillLevel": 5,
+		"timeSec": 20
+	},
+	{
+		"id": "make_potion_strength",
+		"output": { "item": "potion_strength", "qty": 1 },
+		"inputs": [
+			{ "item": "herb", "qty": 4 },
+			{ "item": "claw", "qty": 1 }
+		],
+		"skill": "magic",
+		"skillLevel": 12,
+		"timeSec": 40
+	},
+	{
+		"id": "make_elixir",
+		"output": { "item": "elixir", "qty": 1 },
+		"inputs": [
+			{ "item": "potion_strength", "qty": 1 },
+			{ "item": "rune", "qty": 1 }
+		],
+		"skill": "magic",
+		"skillLevel": 20,
+		"timeSec": 80
+	},
+	{
+		"id": "make_rune",
+		"output": { "item": "rune", "qty": 1 },
+		"inputs": [
+			{ "item": "stone", "qty": 5 },
+			{ "item": "silver_ore", "qty": 1 }
+		],
+		"skill": "magic",
+		"skillLevel": 9,
+		"timeSec": 30
+	},
+	{
+		"id": "make_scroll",
+		"output": { "item": "scroll", "qty": 1 },
+		"inputs": [
+			{ "item": "hide", "qty": 1 },
+			{ "item": "rune", "qty": 1 }
+		],
+		"skill": "magic",
+		"skillLevel": 11,
+		"timeSec": 35
+	},
+	{
+		"id": "extract_venom",
+		"output": { "item": "venom", "qty": 1 },
+		"inputs": [
+			{ "item": "claw", "qty": 2 },
+			{ "item": "mushroom", "qty": 2 }
+		],
+		"skill": "magic",
+		"skillLevel": 14,
+		"timeSec": 45
+	}
 ]

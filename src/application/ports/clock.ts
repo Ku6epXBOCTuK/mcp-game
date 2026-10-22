@@ -1,15 +1,15 @@
 export interface Clock {
-  now(): number;
+	now(): number;
 }
 
 export function systemClock(): Clock {
-  return {
-    now: () => Date.now(),
-  };
+	return {
+		now: () => Date.now(),
+	};
 }
 
 export function fixedClock(at: number): Clock {
-  return {
-    now: () => at,
-  };
+	return {
+		now: () => at,
+	};
 }

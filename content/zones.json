@@ -1,50 +1,50 @@
 [
-  {
-    "id": "meadow",
-    "name": "Луг",
-    "unlock": { "kind": "none" },
-    "monsters": ["rabbit", "wolf"]
-  },
-  {
-    "id": "forest",
-    "name": "Лес",
-    "unlock": { "kind": "skillLevel", "skill": "hunting", "level": 5 },
-    "monsters": ["boar"]
-  },
-  {
-    "id": "quarry",
-    "name": "Каменоломня",
-    "unlock": { "kind": "skillLevel", "skill": "mining", "level": 8 },
-    "monsters": ["rock_lizard", "cave_rat"]
-  },
-  {
-    "id": "swamp",
-    "name": "Болото",
-    "unlock": { "kind": "quest", "quest": "quest_swamp" },
-    "monsters": ["swamp_ooze", "bog_lurker"]
-  },
-  {
-    "id": "hills",
-    "name": "Холмы",
-    "unlock": { "kind": "skillLevel", "skill": "combat", "level": 12 },
-    "monsters": ["bandit", "hill_troll"]
-  },
-  {
-    "id": "cave",
-    "name": "Пещера",
-    "unlock": { "kind": "quest", "quest": "quest_cave" },
-    "monsters": ["cave_spider", "crystal_golem"]
-  },
-  {
-    "id": "ruins",
-    "name": "Руины",
-    "unlock": { "kind": "quest", "quest": "quest_ruins" },
-    "monsters": ["ruin_guardian", "shadow"]
-  },
-  {
-    "id": "dragon_lair",
-    "name": "Логово дракона",
-    "unlock": { "kind": "quest", "quest": "quest_dragon" },
-    "monsters": ["drake", "dragon"]
-  }
+	{
+		"id": "meadow",
+		"name": "Луг",
+		"unlock": { "kind": "none" },
+		"monsters": ["rabbit", "wolf"]
+	},
+	{
+		"id": "forest",
+		"name": "Лес",
+		"unlock": { "kind": "skillLevel", "skill": "hunting", "level": 5 },
+		"monsters": ["boar"]
+	},
+	{
+		"id": "quarry",
+		"name": "Каменоломня",
+		"unlock": { "kind": "skillLevel", "skill": "mining", "level": 8 },
+		"monsters": ["rock_lizard", "cave_rat"]
+	},
+	{
+		"id": "swamp",
+		"name": "Болото",
+		"unlock": { "kind": "quest", "quest": "quest_swamp" },
+		"monsters": ["swamp_ooze", "bog_lurker"]
+	},
+	{
+		"id": "hills",
+		"name": "Холмы",
+		"unlock": { "kind": "skillLevel", "skill": "combat", "level": 12 },
+		"monsters": ["bandit", "hill_troll"]
+	},
+	{
+		"id": "cave",
+		"name": "Пещера",
+		"unlock": { "kind": "quest", "quest": "quest_cave" },
+		"monsters": ["cave_spider", "crystal_golem"]
+	},
+	{
+		"id": "ruins",
+		"name": "Руины",
+		"unlock": { "kind": "quest", "quest": "quest_ruins" },
+		"monsters": ["ruin_guardian", "shadow"]
+	},
+	{
+		"id": "dragon_lair",
+		"name": "Логово дракона",
+		"unlock": { "kind": "quest", "quest": "quest_dragon" },
+		"monsters": ["drake", "dragon"]
+	}
 ]
