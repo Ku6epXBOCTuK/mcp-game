@@ -1,27 +1,11 @@
 [
 	{
-		"id": "chop_wood",
-		"output": { "item": "wood", "qty": 3 },
-		"inputs": [],
-		"skill": "chopping",
-		"skillLevel": 1,
-		"timeSec": 4
-	},
-	{
 		"id": "chop_log",
 		"output": { "item": "log", "qty": 1 },
 		"inputs": [{ "item": "wood", "qty": 4 }],
 		"skill": "chopping",
 		"skillLevel": 5,
 		"timeSec": 8
-	},
-	{
-		"id": "gather_stick",
-		"output": { "item": "stick", "qty": 2 },
-		"inputs": [],
-		"skill": "chopping",
-		"skillLevel": 2,
-		"timeSec": 3
 	},
 	{
 		"id": "make_plank",
@@ -147,46 +131,6 @@
 		"timeSec": 75
 	},
 	{
-		"id": "mine_stone",
-		"output": { "item": "stone", "qty": 3 },
-		"inputs": [],
-		"skill": "mining",
-		"skillLevel": 1,
-		"timeSec": 5
-	},
-	{
-		"id": "mine_iron_ore",
-		"output": { "item": "iron_ore", "qty": 2 },
-		"inputs": [],
-		"skill": "mining",
-		"skillLevel": 8,
-		"timeSec": 12
-	},
-	{
-		"id": "mine_copper_ore",
-		"output": { "item": "copper_ore", "qty": 2 },
-		"inputs": [],
-		"skill": "mining",
-		"skillLevel": 5,
-		"timeSec": 9
-	},
-	{
-		"id": "mine_coal",
-		"output": { "item": "coal", "qty": 2 },
-		"inputs": [],
-		"skill": "mining",
-		"skillLevel": 10,
-		"timeSec": 14
-	},
-	{
-		"id": "mine_gold_ore",
-		"output": { "item": "gold_ore", "qty": 1 },
-		"inputs": [],
-		"skill": "mining",
-		"skillLevel": 20,
-		"timeSec": 25
-	},
-	{
 		"id": "smelt_iron",
 		"output": { "item": "iron_ingot", "qty": 1 },
 		"inputs": [
@@ -240,46 +184,6 @@
 		"skill": "mining",
 		"skillLevel": 16,
 		"timeSec": 35
-	},
-	{
-		"id": "hunt_meat",
-		"output": { "item": "meat", "qty": 2 },
-		"inputs": [],
-		"skill": "hunting",
-		"skillLevel": 1,
-		"timeSec": 6
-	},
-	{
-		"id": "hunt_pelt",
-		"output": { "item": "pelt", "qty": 1 },
-		"inputs": [],
-		"skill": "hunting",
-		"skillLevel": 4,
-		"timeSec": 10
-	},
-	{
-		"id": "hunt_bone",
-		"output": { "item": "bone", "qty": 2 },
-		"inputs": [],
-		"skill": "hunting",
-		"skillLevel": 7,
-		"timeSec": 13
-	},
-	{
-		"id": "hunt_claw",
-		"output": { "item": "claw", "qty": 1 },
-		"inputs": [],
-		"skill": "hunting",
-		"skillLevel": 14,
-		"timeSec": 22
-	},
-	{
-		"id": "hunt_feather",
-		"output": { "item": "feather", "qty": 2 },
-		"inputs": [],
-		"skill": "hunting",
-		"skillLevel": 6,
-		"timeSec": 11
 	},
 	{
 		"id": "make_hide",
@@ -420,22 +324,6 @@
 		"skill": "cooking",
 		"skillLevel": 10,
 		"timeSec": 36
-	},
-	{
-		"id": "collect_herb",
-		"output": { "item": "herb", "qty": 2 },
-		"inputs": [],
-		"skill": "magic",
-		"skillLevel": 1,
-		"timeSec": 7
-	},
-	{
-		"id": "collect_mushroom",
-		"output": { "item": "mushroom", "qty": 2 },
-		"inputs": [],
-		"skill": "magic",
-		"skillLevel": 1,
-		"timeSec": 7
 	},
 	{
 		"id": "make_potion_health",

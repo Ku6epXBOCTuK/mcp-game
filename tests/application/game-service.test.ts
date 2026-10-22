@@ -70,13 +70,25 @@ test("start action refuses a second action and records the error in the log", as
 });
 
 test("the action log records the real target of a craft", async () => {
-	const { service, db } = makeService();
-	const crafted = await service.craft("p1", "chop_wood");
+	const db = openMemoryDatabase();
+	let now = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => now },
+	});
+	const gathered = await service.gather("p1", "chopping", "wood");
+	assert.equal(gathered.isOk(), true);
+	now += 300_000;
+	const cancelled = await service.cancelAction("p1");
+	assert.equal(cancelled.isOk(), true);
+	const crafted = await service.craft("p1", "chop_log");
 	assert.equal(crafted.isOk(), true);
 	const events = await service.listEvents("p1", 10);
-	const started = events.find((event) => event.type === "action.started");
-	assert.ok(started);
-	assert.equal(started?.payload.target, "chop_wood");
+	const started = events.filter((event) => event.type === "action.started");
+	assert.ok(started.some((event) => event.payload.target === "wood"));
+	assert.ok(started.some((event) => event.payload.target === "chop_log"));
 	db.close();
 });
 

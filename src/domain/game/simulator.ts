@@ -76,31 +76,8 @@ export type SimulationResult = {
 	metrics: SimulationMetrics;
 };
 
-const RESOURCE_SKILL: Record<string, SkillId> = {
-	wood: "chopping",
-	log: "chopping",
-	stick: "chopping",
-	stone: "mining",
-	iron_ore: "mining",
-	copper_ore: "mining",
-	coal: "mining",
-	gold_ore: "mining",
-	silver_ore: "mining",
-	grass_fiber: "chopping",
-	meat: "hunting",
-	pelt: "hunting",
-	fat: "hunting",
-	bone: "hunting",
-	claw: "hunting",
-	feather: "hunting",
-	milk: "hunting",
-	herb: "magic",
-	mushroom: "magic",
-	berry: "magic",
-};
-
-function skillOf(itemId: string): SkillId {
-	return RESOURCE_SKILL[itemId] ?? "chopping";
+function skillOf(content: GameContent, itemId: string): SkillId | null {
+	return itemOf(content, itemId)?.skill ?? null;
 }
 
 function itemOf(content: GameContent, itemId: string) {
@@ -124,14 +101,24 @@ function productionMult(
 	return multiplier;
 }
 
+function canGather(
+	state: GameState,
+	item: GameContent["items"][number],
+): boolean {
+	if (!item.skill) return false;
+	const level = state.skills[item.skill]?.level ?? 0;
+	return level >= (item.skillLevel ?? 1);
+}
+
 function gatherGoldPerMinute(
 	state: GameState,
 	content: GameContent,
 	itemId: string,
 ): number {
 	const item = itemOf(content, itemId);
-	if (!item || item.type !== "resource") return 0;
-	const skill = skillOf(itemId);
+	if (!item || !canGather(state, item)) return 0;
+	const skill = item.skill;
+	if (!skill) return 0;
 	const level = state.skills[skill]?.level ?? 1;
 	const balance = content.balance;
 	const rateBase = balance.rateBase[skill] ?? 0;
@@ -148,7 +135,7 @@ function bestGather(
 ): { itemId: string; perMinute: number } | null {
 	let best: { itemId: string; perMinute: number } | null = null;
 	for (const item of content.items) {
-		if (item.type !== "resource" || item.sellPrice <= 0) continue;
+		if (!item.skill || item.sellPrice <= 0) continue;
 		const perMinute = gatherGoldPerMinute(state, content, item.id);
 		if (perMinute <= 0) continue;
 		if (!best || perMinute > best.perMinute) {
@@ -165,9 +152,41 @@ function skillGoldPerMinute(
 ): number {
 	let best = 0;
 	for (const item of content.items) {
-		if (item.type !== "resource" || item.sellPrice <= 0) continue;
-		if (skillOf(item.id) !== skill) continue;
+		if (!item.skill || item.sellPrice <= 0) continue;
+		if (skillOf(content, item.id) !== skill) continue;
 		best = Math.max(best, gatherGoldPerMinute(state, content, item.id));
+	}
+	return best;
+}
+
+function craftGoldPerMinute(
+	state: GameState,
+	content: GameContent,
+	skill: SkillId,
+): number {
+	let best = 0;
+	for (const recipe of content.recipes) {
+		if (recipe.skill !== skill) continue;
+		const level = state.skills[recipe.skill]?.level ?? 0;
+		if (level < recipe.skillLevel) continue;
+		const output = itemOf(content, recipe.output.item);
+		const outputValue = (output?.sellPrice ?? 0) * recipe.output.qty;
+		let inputValue = 0;
+		let hasInputs = true;
+		for (const input of recipe.inputs) {
+			if ((state.inventory[input.item] ?? 0) < input.qty) {
+				hasInputs = false;
+				break;
+			}
+			inputValue += (itemOf(content, input.item)?.sellPrice ?? 0) * input.qty;
+		}
+		if (!hasInputs) continue;
+		const gain = outputValue - inputValue;
+		if (gain <= 0) continue;
+		const speed =
+			(1 + content.balance.skillRateK * level) *
+			productionMult(state, content, skill);
+		best = Math.max(best, ((gain * 60) / recipe.timeSec) * speed);
 	}
 	return best;
 }
@@ -182,10 +201,11 @@ function upgradeGoldGainPerMinute(
 	const effect = upgrade.effect;
 	if (effect.kind === "productionMultiplier") {
 		const skill = effect.skill;
-		const base = skill
+		const gatherBase = skill
 			? skillGoldPerMinute(state, content, skill)
 			: totalGatherGoldPerMinute(state, content);
-		return base * effect.valuePerLevel;
+		const craftBase = skill ? craftGoldPerMinute(state, content, skill) : 0;
+		return (gatherBase + craftBase) * effect.valuePerLevel;
 	}
 	if (effect.kind === "passiveIncome") {
 		return effect.valuePerLevel * 60;
@@ -298,6 +318,7 @@ type QuestPlan = {
 	targetId: string;
 	leveling: boolean;
 	skill?: SkillId | undefined;
+	keepRecipeId?: string | undefined;
 };
 
 function inputPlan(
@@ -308,7 +329,11 @@ function inputPlan(
 ): { kind: "gather" | "craft"; targetId: string } | null {
 	for (const recipe of content.recipes) {
 		if (recipe.output.item !== itemId) continue;
-		if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) continue;
+		if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) {
+			const locked = lockedProducerPlan(state, content, recipe);
+			if (locked) return locked;
+			continue;
+		}
 		const missing = recipe.inputs.find(
 			(input) => (state.inventory[input.item] ?? 0) < input.qty,
 		);
@@ -319,10 +344,25 @@ function inputPlan(
 		}
 	}
 	const item = itemOf(content, itemId);
-	if (item && item.type === "resource") {
+	if (item && item.skill) {
 		return { kind: "gather", targetId: itemId };
 	}
 	return null;
+}
+
+function lockedProducerPlan(
+	state: GameState,
+	content: GameContent,
+	recipe: GameContent["recipes"][number],
+): { kind: "gather"; targetId: string } | null {
+	for (const input of recipe.inputs) {
+		const item = itemOf(content, input.item);
+		if (item && canGather(state, item)) {
+			return { kind: "gather", targetId: item.id };
+		}
+	}
+	const fallback = gatherForSkill(state, content, recipe.skill);
+	return fallback ? { kind: "gather", targetId: fallback } : null;
 }
 
 function gatherForSkill(
@@ -332,8 +372,7 @@ function gatherForSkill(
 ): string | null {
 	let best: { itemId: string; perMinute: number } | null = null;
 	for (const item of content.items) {
-		if (item.type !== "resource") continue;
-		if (skillOf(item.id) !== skill) continue;
+		if (!item.skill || item.skill !== skill) continue;
 		const perMinute = gatherGoldPerMinute(state, content, item.id);
 		if (perMinute <= 0) continue;
 		if (!best || perMinute > best.perMinute) {
@@ -355,7 +394,8 @@ function craftForSkill(
 			(input) => (state.inventory[input.item] ?? 0) < input.qty,
 		);
 		if (!missing) return { kind: "craft", targetId: recipe.id };
-		return inputPlan(state, content, missing.item);
+		const plan = inputPlan(state, content, missing.item);
+		if (plan) return plan;
 	}
 	return null;
 }
@@ -397,7 +437,11 @@ function questStepPlan(
 		if (step.kind === "collect") {
 			const item = itemOf(content, step.target);
 			if (!item) return null;
-			if (item.type === "resource") {
+			if (item.skill) {
+				if (!canGather(state, item)) {
+					const skill = skillPlan(state, content, item.skill);
+					return skill ? { questId: quest.id, ...skill, leveling: true } : null;
+				}
 				return {
 					questId: quest.id,
 					kind: "gather",
@@ -469,9 +513,23 @@ function questPlan(state: GameState, content: GameContent): QuestPlan | null {
 		const status = state.quests[quest.id]?.status;
 		if (status === "claimed" || status === "completed") continue;
 		const plan = questStepPlan(state, content, quest);
-		if (plan) return plan;
+		if (!plan) continue;
+		const keepRecipeId = questCraftRecipe(state, quest);
+		return keepRecipeId ? { ...plan, keepRecipeId } : plan;
 	}
 	return null;
+}
+
+function questCraftRecipe(
+	state: GameState,
+	quest: GameContent["quests"][number],
+): string | undefined {
+	const progress = questProgress(state, quest);
+	for (const entry of progress.steps) {
+		if (entry.done) continue;
+		if (entry.step.kind === "craft") return entry.step.target;
+	}
+	return undefined;
 }
 
 function craftPlan(
@@ -505,18 +563,26 @@ function craftPlan(
 	return best;
 }
 
+const MAX_UPGRADE_PAYBACK_SEC = 30 * 60;
+
 function nextUpgrade(
 	state: GameState,
 	content: GameContent,
 ): { id: string; cost: number } | null {
-	let best: { id: string; cost: number } | null = null;
+	let best: { id: string; cost: number; paybackSec: number } | null = null;
 	for (const upgrade of content.upgrades) {
 		const level = state.upgrades[upgrade.id] ?? 0;
 		if (level >= upgrade.maxLevel) continue;
 		const cost = upgradePrice(content, upgrade.id, level);
-		if (!best || cost < best.cost) best = { id: upgrade.id, cost };
+		const gain = upgradeGoldGainPerMinute(state, content, upgrade.id);
+		if (gain <= 0) continue;
+		const paybackSec = (cost / gain) * 60;
+		if (paybackSec > MAX_UPGRADE_PAYBACK_SEC) continue;
+		if (!best || paybackSec < best.paybackSec) {
+			best = { id: upgrade.id, cost, paybackSec };
+		}
 	}
-	return best;
+	return best ? { id: best.id, cost: best.cost } : null;
 }
 
 function median(values: number[]): number | null {
@@ -641,7 +707,7 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 
 		const preview = previewPrestige(state, content);
 		const leveling = quest !== null && quest.leveling;
-		if (preview.points > 0 && !leveling) {
+		if (preview.points > 0 && !leveling && quest === null) {
 			const goldBefore = state.wallet.gold;
 			const result = prestige(state, content, now);
 			if (result.isOk()) {
@@ -676,6 +742,7 @@ export function simulate(options: SimulatorOptions): SimulationResult {
 			}
 		};
 		keepRecipe(plan?.recipeId);
+		keepRecipe(quest?.keepRecipeId);
 		keepRecipe(quest && quest.kind === "craft" ? quest.targetId : null);
 		if (quest && quest.leveling && quest.skill) {
 			keepRecipe(goalRecipeForSkill(state, content, quest.skill));
@@ -780,7 +847,10 @@ type ActionChoices = {
 	gather: { itemId: string; perMinute: number } | null;
 };
 
-function questCommand(quest: QuestPlan): StartActionCommand {
+function questCommand(
+	content: GameContent,
+	quest: QuestPlan,
+): StartActionCommand {
 	if (quest.kind === "fight") {
 		return { kind: "fight", monsterId: quest.targetId };
 	}
@@ -789,7 +859,7 @@ function questCommand(quest: QuestPlan): StartActionCommand {
 	}
 	return {
 		kind: "gather",
-		skill: skillOf(quest.targetId),
+		skill: skillOf(content, quest.targetId) ?? "chopping",
 		targetId: quest.targetId,
 	};
 }
@@ -812,7 +882,7 @@ function startBestAction(
 ): GameState | null {
 	const quest = choices.quest;
 	if (quest) {
-		const started = tryStart(state, content, questCommand(quest), now);
+		const started = tryStart(state, content, questCommand(content, quest), now);
 		if (started) return started;
 	}
 
@@ -842,7 +912,11 @@ function startBestAction(
 				tryStart(
 					state,
 					content,
-					{ kind: "gather", skill: skillOf(itemId), targetId: itemId },
+					{
+						kind: "gather",
+						skill: skillOf(content, itemId) ?? "chopping",
+						targetId: itemId,
+					},
 					now,
 				),
 		});

@@ -28,15 +28,16 @@
 	"maxTickPerDaySec": 86400,
 	"offlineCapSec": 43200,
 	"rateBase": {
-		"chopping": 2,
-		"mining": 1.8,
-		"hunting": 1.6,
+		"chopping": 45,
+		"mining": 36,
+		"hunting": 20,
 		"crafting": 1.2,
 		"cooking": 1,
 		"trading": 0.8,
 		"combat": 1.4,
-		"magic": 0.6
+		"magic": 17
 	},
+	"xpPerSecond": 1,
 	"costGrowth": {
 		"axe": 1.15,
 		"pickaxe": 1.15,

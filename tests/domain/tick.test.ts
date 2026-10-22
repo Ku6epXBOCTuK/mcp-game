@@ -1,6 +1,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { tick } from "../../src/domain/game/tick.ts";
+import { totalXpToReach } from "../../src/domain/shared/curves.ts";
 import { createInitialState } from "../../src/domain/game/state.ts";
 import type { GameContent } from "../../src/domain/content/types.ts";
 import type { ActiveAction, GameState } from "../../src/domain/game/types.ts";
@@ -120,7 +121,9 @@ test("gathering produces items and xp over time", () => {
 	const before = state({ activeAction: gatherAction() });
 	const after = tick(before, { content: CONTENT, now: 1600 });
 	assert.equal(after.inventory.wood, 11);
-	assert.equal(after.skills.chopping?.xp, 11);
+	assert.equal(after.skills.chopping?.level, 7);
+	const xpLeft = 600 - totalXpToReach(7);
+	assert.ok(Math.abs((after.skills.chopping?.xp ?? 0) - xpLeft) < 0.01);
 	assert.equal(after.lastTickAt, 1600);
 });
 

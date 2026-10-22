@@ -94,6 +94,7 @@ test("a quest-gated zone opens as soon as the quest steps are done", () => {
 		counters: {
 			gathered: {},
 			crafted: {},
+			craftedItems: {},
 			killed: { wolf: 1 },
 		},
 	});
@@ -109,7 +110,12 @@ test("a quest-gated zone opens as soon as the quest steps are done", () => {
 test("a claimed quest keeps its zone open", () => {
 	const claimed = claimQuest(
 		state({
-			counters: { gathered: {}, crafted: {}, killed: { wolf: 1 } },
+			counters: {
+				gathered: {},
+				crafted: {},
+				craftedItems: {},
+				killed: { wolf: 1 },
+			},
 		}),
 		CONTENT,
 		"quest_swamp",

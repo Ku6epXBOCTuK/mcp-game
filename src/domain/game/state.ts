@@ -13,7 +13,7 @@ import {
 import { DEFAULT_COMBAT_POLICY, startCombat } from "./combat.ts";
 import type { GameContent } from "../content/types.ts";
 
-export const STATE_VERSION = 5;
+export const STATE_VERSION = 6;
 
 const EVENT_RNG_SALT = 0x9e3779b9;
 
@@ -28,6 +28,12 @@ export function migrateState(
 	};
 	const legacyPolicy = (state as { combatPolicy?: CombatPolicy }).combatPolicy;
 	const legacyEventRng = (state as { eventRng?: RngState }).eventRng;
+	const legacyCounters = state.counters as {
+		gathered: Record<string, number>;
+		crafted: Record<string, number>;
+		craftedItems?: Record<string, number>;
+		killed: Record<string, number>;
+	};
 	let next: GameState = {
 		...state,
 		version: STATE_VERSION,
@@ -39,6 +45,12 @@ export function migrateState(
 		eventRng: legacyEventRng ?? {
 			seed: ((state.rng?.seed ?? 0) ^ EVENT_RNG_SALT) >>> 0,
 			counter: 0,
+		},
+		counters: {
+			gathered: legacyCounters.gathered ?? {},
+			crafted: legacyCounters.crafted ?? {},
+			craftedItems: legacyCounters.craftedItems ?? {},
+			killed: legacyCounters.killed ?? {},
 		},
 	};
 	const action = next.activeAction;
@@ -86,7 +98,7 @@ export function createInitialState(
 		quests: {},
 		market: { seed, counter: 0, prices: {}, updatedAt: now },
 		bank: { deposits: 0, credit: 0, accruedAt: now },
-		counters: { gathered: {}, crafted: {}, killed: {} },
+		counters: { gathered: {}, crafted: {}, craftedItems: {}, killed: {} },
 		stats: { totalGoldEarned: 0, deaths: 0 },
 		combatPolicy: { ...DEFAULT_COMBAT_POLICY },
 		rng: { seed, counter: 0 },

@@ -3,6 +3,8 @@
 		"id": "wood",
 		"name": "Дерево",
 		"type": "resource",
+		"skill": "chopping",
+		"skillLevel": 1,
 		"sellPrice": 2,
 		"buyPrice": 4,
 		"description": "Свежий срез с дерева."
@@ -27,6 +29,8 @@
 		"id": "stick",
 		"name": "Палка",
 		"type": "resource",
+		"skill": "chopping",
+		"skillLevel": 2,
 		"sellPrice": 1,
 		"buyPrice": 2,
 		"description": "Тонкая ветка."
@@ -35,6 +39,8 @@
 		"id": "stone",
 		"name": "Камень",
 		"type": "resource",
+		"skill": "mining",
+		"skillLevel": 1,
 		"sellPrice": 2,
 		"buyPrice": 4,
 		"description": "Булыжник с поверхности."
@@ -43,6 +49,8 @@
 		"id": "iron_ore",
 		"name": "Железная руда",
 		"type": "resource",
+		"skill": "mining",
+		"skillLevel": 8,
 		"sellPrice": 6,
 		"buyPrice": 12,
 		"description": "Сырьё для кузни."
@@ -51,6 +59,8 @@
 		"id": "copper_ore",
 		"name": "Медная руда",
 		"type": "resource",
+		"skill": "mining",
+		"skillLevel": 5,
 		"sellPrice": 5,
 		"buyPrice": 10,
 		"description": "Сырьё для кузни."
@@ -59,6 +69,8 @@
 		"id": "coal",
 		"name": "Уголь",
 		"type": "resource",
+		"skill": "mining",
+		"skillLevel": 10,
 		"sellPrice": 5,
 		"buyPrice": 10,
 		"description": "Топливо плавильни."
@@ -67,6 +79,8 @@
 		"id": "gold_ore",
 		"name": "Золотая руда",
 		"type": "resource",
+		"skill": "mining",
+		"skillLevel": 20,
 		"sellPrice": 14,
 		"buyPrice": 28,
 		"description": "Редкая жила."
@@ -75,6 +89,8 @@
 		"id": "silver_ore",
 		"name": "Серебряная руда",
 		"type": "resource",
+		"skill": "mining",
+		"skillLevel": 12,
 		"sellPrice": 10,
 		"buyPrice": 20,
 		"description": "Редкая жила."
@@ -83,6 +99,8 @@
 		"id": "milk",
 		"name": "Молоко",
 		"type": "resource",
+		"skill": "hunting",
+		"skillLevel": 1,
 		"sellPrice": 4,
 		"buyPrice": 8,
 		"description": "Свежее молоко."
@@ -91,6 +109,8 @@
 		"id": "meat",
 		"name": "Мясо",
 		"type": "resource",
+		"skill": "hunting",
+		"skillLevel": 1,
 		"sellPrice": 4,
 		"buyPrice": 8,
 		"description": "Свежее мясо."
@@ -107,6 +127,8 @@
 		"id": "pelt",
 		"name": "Шкура",
 		"type": "resource",
+		"skill": "hunting",
+		"skillLevel": 4,
 		"sellPrice": 6,
 		"buyPrice": 12,
 		"description": "Необработанная шкура."
@@ -123,6 +145,8 @@
 		"id": "fat",
 		"name": "Жир",
 		"type": "resource",
+		"skill": "hunting",
+		"skillLevel": 1,
 		"sellPrice": 3,
 		"buyPrice": 6,
 		"description": "Топливо для свечей и смазки."
@@ -131,6 +155,8 @@
 		"id": "bone",
 		"name": "Кость",
 		"type": "resource",
+		"skill": "hunting",
+		"skillLevel": 7,
 		"sellPrice": 3,
 		"buyPrice": 6,
 		"description": "Крупная кость."
@@ -139,6 +165,8 @@
 		"id": "claw",
 		"name": "Коготь",
 		"type": "resource",
+		"skill": "hunting",
+		"skillLevel": 14,
 		"sellPrice": 5,
 		"buyPrice": 10,
 		"description": "Крепкий коготь хищника."
@@ -147,6 +175,8 @@
 		"id": "feather",
 		"name": "Перо",
 		"type": "resource",
+		"skill": "hunting",
+		"skillLevel": 6,
 		"sellPrice": 2,
 		"buyPrice": 4,
 		"description": "Пёрышко для стрел."
@@ -155,6 +185,8 @@
 		"id": "grass_fiber",
 		"name": "Травяное волокно",
 		"type": "resource",
+		"skill": "chopping",
+		"skillLevel": 1,
 		"sellPrice": 1,
 		"buyPrice": 2,
 		"description": "Прочные волокна травы."
@@ -163,6 +195,8 @@
 		"id": "herb",
 		"name": "Трава",
 		"type": "resource",
+		"skill": "magic",
+		"skillLevel": 1,
 		"sellPrice": 4,
 		"buyPrice": 8,
 		"description": "Лечебная трава."
@@ -179,6 +213,8 @@
 		"id": "mushroom",
 		"name": "Гриб",
 		"type": "resource",
+		"skill": "magic",
+		"skillLevel": 1,
 		"sellPrice": 3,
 		"buyPrice": 6,
 		"description": "Лесной гриб."
@@ -187,6 +223,8 @@
 		"id": "berry",
 		"name": "Ягоды",
 		"type": "resource",
+		"skill": "magic",
+		"skillLevel": 1,
 		"sellPrice": 2,
 		"buyPrice": 4,
 		"description": "Сладкие лесные ягоды."
@@ -219,6 +257,8 @@
 		"id": "salt",
 		"name": "Соль",
 		"type": "material",
+		"skill": "mining",
+		"skillLevel": 3,
 		"sellPrice": 4,
 		"buyPrice": 8,
 		"description": "Минерал для консервации."

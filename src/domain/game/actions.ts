@@ -48,12 +48,24 @@ export function startAction(
 	if (command.kind === "gather") {
 		const item = content.items.find((entry) => entry.id === command.targetId);
 		if (!item) return itemUnknown(command.targetId);
-		if (item.type !== "resource") {
+		if (!item.skill) {
 			return err({
 				code: "NotSupported",
-				message: `Добывать можно только ресурсы, "${item.id}" — ${item.type}.`,
-				feature: `gather:${item.type}`,
+				message: `Добывать нечего: "${item.id}" не является сырьём.`,
+				feature: `gather:${item.id}`,
 			});
+		}
+		if (item.skill !== command.skill) {
+			return err({
+				code: "NotSupported",
+				message: `"${item.id}" добывается скиллом "${item.skill}", а не "${command.skill}".`,
+				feature: `gather:${item.id}`,
+			});
+		}
+		const requiredLevel = item.skillLevel ?? 1;
+		const level = state.skills[item.skill]?.level ?? 0;
+		if (level < requiredLevel) {
+			return skillTooLow(item.skill, requiredLevel, level);
 		}
 		const action: ActiveAction = {
 			kind: "gather",

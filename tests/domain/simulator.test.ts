@@ -106,8 +106,13 @@ test("the simulator follows the quest chain instead of only fighting", async () 
 	});
 	assert.ok((state.counters.gathered.wood ?? 0) >= 20);
 	assert.ok(Object.keys(state.counters.crafted).length > 0);
-	const first = questProgress(state, content.quests[0]);
-	assert.equal(first.status, "in-progress");
+	const first = content.quests[0];
+	assert.ok(first);
+	assert.equal(questProgress(state, first).status, "claimed");
+	const claimed = Object.values(state.quests).filter(
+		(quest) => quest.status === "claimed",
+	).length;
+	assert.ok(claimed >= 3, `квестов закрыто: ${claimed}`);
 	assert.ok(metrics.idleRatio <= 0.6);
 });
 

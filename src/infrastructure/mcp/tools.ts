@@ -434,7 +434,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_skills",
 		title: "Скиллы",
 		description:
-			"Уровни и XP скиллов, цель следующего уровня, доступные рецепты по скиллу.",
+			"Уровни и XP скиллов, цель следующего уровня, добываемые ресурсы и доступные рецепты по скиллу.",
 		scopes: ["read"],
 		inputSchema: z.object({ skill: z.string().optional() }),
 		handler: async (args, context) => {
@@ -448,6 +448,23 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 				content.balance.xpBase,
 				content.balance.xpExponent,
 			).filter((skill) => (only ? skill.id === only : true));
+			const resources = content.items
+				.filter((item) => item.skill && (only ? item.skill === only : true))
+				.map((item) => {
+					const skillLevel = state.skills[item.skill ?? "chopping"]?.level ?? 1;
+					return {
+						id: item.id,
+						name: item.name,
+						skill: item.skill,
+						sellPrice: item.sellPrice,
+						requiredLevel: item.skillLevel ?? 1,
+						available: skillLevel >= (item.skillLevel ?? 1),
+						ratePerMinute: Math.round(
+							(content.balance.rateBase[item.skill ?? ""] ?? 0) *
+								(1 + content.balance.skillRateK * skillLevel),
+						),
+					};
+				});
 			const recipes = content.recipes
 				.filter((recipe) => (only ? recipe.skill === only : true))
 				.map((recipe) => ({
@@ -460,7 +477,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 					available:
 						(state.skills[recipe.skill]?.level ?? 0) >= recipe.skillLevel,
 				}));
-			return jsonResult({ skills, recipes });
+			return jsonResult({ skills, resources, recipes });
 		},
 	};
 

@@ -167,7 +167,7 @@ test("agent completes the full loop through MCP tools", async () => {
 
 	await craftUntil(client, "chop_log", 150, 6);
 	await craftUntil(client, "make_plank", 75, 6);
-	await craftUntil(client, "gather_stick", 20, 4);
+	await gatherUntil(client, "chopping", "stick", 20, 4);
 	await craftUntil(client, "make_hammer", 1, 4);
 
 	const afterCraft = await readState(client);

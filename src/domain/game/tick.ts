@@ -201,16 +201,17 @@ function applyGather(
 				},
 			},
 		};
-		next = gainXp(
-			next,
-			skill,
-			produced *
-				multipliers.xp *
-				upgradeMultiplier(next, content, "xpMultiplier", skill),
-			balance.xpBase,
-			balance.xpExponent,
-		);
 	}
+	next = gainXp(
+		next,
+		skill,
+		elapsed *
+			(balance.xpPerSecond ?? 1) *
+			multipliers.xp *
+			upgradeMultiplier(next, content, "xpMultiplier", skill),
+		balance.xpBase,
+		balance.xpExponent,
+	);
 	return {
 		...next,
 		activeAction: { ...action, progress: after },
@@ -254,8 +255,25 @@ function applyCraft(
 	const balance = content.balance;
 	const recipe = content.recipes.find((entry) => entry.id === action.targetId);
 	if (!recipe) return { ...state, activeAction: null };
+	const level = skillLevelOf(
+		state,
+		recipe.skill,
+		multipliers.skillBonus[recipe.skill] ?? 0,
+	);
+	const speed = productionRate({
+		rateBase: 1,
+		skillLevel: level,
+		upgradeMult:
+			upgradeMultiplier(state, content, "productionMultiplier", recipe.skill) *
+			multipliers.production,
+		prestigeMult: Math.pow(
+			state.prestige.points + 1,
+			balance.prestigeProductionExponent,
+		),
+		k: balance.skillRateK,
+	});
 	const before = action.progress;
-	const after = before + elapsed;
+	const after = before + elapsed * speed;
 	const rawProduced =
 		Math.floor(after / recipe.timeSec) - Math.floor(before / recipe.timeSec);
 	const affordable = maxCraftsByInputs(state, recipe.inputs);
@@ -272,18 +290,25 @@ function applyCraft(
 					...next.counters.crafted,
 					[recipe.id]: (next.counters.crafted[recipe.id] ?? 0) + produced,
 				},
+				craftedItems: {
+					...next.counters.craftedItems,
+					[recipe.output.item]:
+						(next.counters.craftedItems[recipe.output.item] ?? 0) +
+						produced * recipe.output.qty,
+				},
 			},
 		};
-		next = gainXp(
-			next,
-			recipe.skill,
-			produced *
-				multipliers.xp *
-				upgradeMultiplier(next, content, "xpMultiplier", recipe.skill),
-			balance.xpBase,
-			balance.xpExponent,
-		);
 	}
+	next = gainXp(
+		next,
+		recipe.skill,
+		elapsed *
+			(balance.xpPerSecond ?? 1) *
+			multipliers.xp *
+			upgradeMultiplier(next, content, "xpMultiplier", recipe.skill),
+		balance.xpBase,
+		balance.xpExponent,
+	);
 	return {
 		...next,
 		activeAction: { ...action, progress: after },

@@ -15,6 +15,8 @@ export type ItemContent = {
 	id: string;
 	name: string;
 	type: ItemType;
+	skill?: SkillId | undefined;
+	skillLevel?: number | undefined;
 	sellPrice: number;
 	buyPrice: number;
 	description?: string | undefined;
@@ -129,6 +131,7 @@ export type BalanceContent = {
 	maxTickPerDaySec: number;
 	offlineCapSec: number;
 	rateBase: Record<string, number>;
+	xpPerSecond?: number | undefined;
 	costGrowth: Record<string, number>;
 	prestigeProductionExponent: number;
 	prestigeGoldExponent: number;
