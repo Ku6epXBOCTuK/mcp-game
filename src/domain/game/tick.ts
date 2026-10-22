@@ -2,9 +2,22 @@ import { productionRate, xpToNext } from "../shared/curves.ts";
 import { nextRandom } from "../shared/rng.ts";
 import { refreshMarket } from "./market.ts";
 import { accrueInterest, applyGoldIncome } from "./bank.ts";
-import { maxHpFor, regenerateHealth } from "./health.ts";
+import {
+	consumePotions,
+	maxHpFor,
+	potionHealAmount,
+	regenerateHealth,
+} from "./health.ts";
+import { advanceCombat, DEFAULT_COMBAT_POLICY } from "./combat.ts";
 import type { GameContent, EventContent } from "../content/types.ts";
-import type { ActiveAction, ActiveEvent, GameState, SkillId } from "./types.ts";
+import type {
+	ActiveEvent,
+	CraftAction,
+	FightAction,
+	GatherAction,
+	GameState,
+	SkillId,
+} from "./types.ts";
 
 export type TickOptions = {
 	content: GameContent;
@@ -150,7 +163,7 @@ function spawnEvent(
 
 function applyGather(
 	state: GameState,
-	action: ActiveAction,
+	action: GatherAction,
 	elapsed: number,
 	content: GameContent,
 	multipliers: Multipliers,
@@ -233,7 +246,7 @@ function consumeInputs(
 
 function applyCraft(
 	state: GameState,
-	action: ActiveAction,
+	action: CraftAction,
 	elapsed: number,
 	content: GameContent,
 	multipliers: Multipliers,
@@ -279,17 +292,20 @@ function applyCraft(
 
 function applyFight(
 	state: GameState,
-	action: ActiveAction,
+	action: FightAction,
 	elapsed: number,
 	content: GameContent,
 	multipliers: Multipliers,
 	random: () => number,
-): GameState {
+	now: number,
+): { state: GameState; idleSec: number } {
 	const balance = content.balance;
 	const monster = content.monsters.find(
 		(entry) => entry.id === action.targetId,
 	);
-	if (!monster) return { ...state, activeAction: null };
+	if (!monster) {
+		return { state: { ...state, activeAction: null }, idleSec: elapsed };
+	}
 	const combatLevel = skillLevelOf(
 		state,
 		"combat",
@@ -298,56 +314,116 @@ function applyFight(
 	const maxHp = maxHpFor(state, content);
 	const dps =
 		balance.playerDamageBase + balance.playerDamagePerLevel * combatLevel;
-	const dealtBefore = action.progress;
-	const dealtAfter = dealtBefore + dps * elapsed;
-	const monsterHpLeft = monster.hp - dealtAfter;
+	const policy = state.combatPolicy ?? DEFAULT_COMBAT_POLICY;
+	const potionHeal = potionHealAmount(content, maxHp);
 
-	const hits = Math.floor(elapsed / monster.attackInterval);
-	const taken = hits * monster.damage;
-	const health = Math.max(0, state.health.hp - taken);
+	let current = state;
+	let fight: FightAction = action;
+	let remaining = elapsed;
+	let idleSec = 0;
+	let nextAction: FightAction | null = null;
 
-	if (health <= 0) {
-		return {
-			...state,
-			health: { hp: maxHp, maxHp },
-			activeAction: null,
-		};
-	}
-
-	if (monsterHpLeft <= 0) {
-		let next: GameState = {
-			...state,
-			health: { hp: health, maxHp: state.health.maxHp },
-			activeAction: null,
-		};
-		next = gainXp(
-			next,
-			"combat",
-			monster.xp *
-				multipliers.xp *
-				upgradeMultiplier(next, content, "xpMultiplier", "combat"),
-			balance.xpBase,
-			balance.xpExponent,
-		);
-		next = rollDrops(next, monster, random);
-		next = {
-			...next,
-			counters: {
-				...next.counters,
-				killed: {
-					...next.counters.killed,
-					[monster.id]: (next.counters.killed[monster.id] ?? 0) + 1,
-				},
+	while (remaining > 0) {
+		const result = advanceCombat({
+			combat: {
+				monsterHpLeft: fight.monsterHpLeft,
+				monsterHitInSec: fight.monsterHitInSec,
 			},
-		};
-		return next;
+			elapsed: remaining,
+			monster,
+			playerDps: dps,
+			playerHp: current.health.hp,
+			playerMaxHp: maxHp,
+			potionHeal,
+			potionsAvailable: current.inventory.potion_health ?? 0,
+			policy,
+		});
+		if (result.potionsUsed > 0) {
+			current = consumePotions(current, result.potionsUsed);
+		}
+		remaining -= result.spentSec;
+		current = { ...current, health: { hp: result.playerHp, maxHp } };
+
+		if (result.outcome === "ongoing") {
+			nextAction = {
+				...fight,
+				monsterHpLeft: result.combat.monsterHpLeft,
+				monsterHitInSec: result.combat.monsterHitInSec,
+			};
+			break;
+		}
+
+		if (result.outcome === "victory") {
+			current = grantKill(current, monster, multipliers, random, content);
+			if (policy.autoRepeat) {
+				fight = {
+					...fight,
+					startedAt: now,
+					monsterHpLeft: monster.hp,
+					monsterHitInSec:
+						monster.attackInterval > 0 ? monster.attackInterval : Infinity,
+				};
+				nextAction = fight;
+				if (remaining > 0) continue;
+				break;
+			}
+			nextAction = null;
+			idleSec += remaining;
+			break;
+		}
+
+		if (result.outcome === "defeat") {
+			current = {
+				...current,
+				health: { hp: maxHp, maxHp },
+				stats: { ...current.stats, deaths: current.stats.deaths + 1 },
+			};
+			nextAction = null;
+			idleSec += remaining;
+			break;
+		}
+
+		nextAction = null;
+		idleSec += remaining;
+		break;
 	}
 
-	return {
+	return { state: { ...current, activeAction: nextAction }, idleSec };
+}
+
+function grantKill(
+	state: GameState,
+	monster: GameContent["monsters"][number],
+	multipliers: Multipliers,
+	random: () => number,
+	content: GameContent,
+): GameState {
+	const balance = content.balance;
+	let next: GameState = {
 		...state,
-		health: { hp: health, maxHp: state.health.maxHp },
-		activeAction: { ...action, progress: dealtAfter },
+		health: { hp: state.health.hp, maxHp: state.health.maxHp },
 	};
+	next = gainXp(
+		next,
+		"combat",
+		monster.xp *
+			multipliers.xp *
+			upgradeMultiplier(next, content, "xpMultiplier", "combat"),
+		balance.xpBase,
+		balance.xpExponent,
+	);
+	next = rollDrops(next, monster, random);
+	next = {
+		...next,
+		counters: {
+			...next.counters,
+			killed: {
+				...next.counters.killed,
+				[monster.id]: (next.counters.killed[monster.id] ?? 0) + 1,
+			},
+		},
+	};
+	return next;
 }
 
 export function tick(state: GameState, options: TickOptions): GameState {
@@ -364,24 +440,49 @@ export function tick(state: GameState, options: TickOptions): GameState {
 		return result.value;
 	};
 
+	// NOTE: the event stream is separate so that per-tick event rolls cannot
+	// shift the loot rolls: loot must not depend on the poll interval.
+	let eventRngState = state.eventRng ?? state.rng;
+	const eventRandom = (): number => {
+		const result = nextRandom(eventRngState);
+		eventRngState = result.state;
+		return result.value;
+	};
+
 	const activeEvents = state.activeEvents.filter((event) => event.endsAt > now);
-	let next: GameState = { ...state, activeEvents, rng: rngState };
+	let next: GameState = {
+		...state,
+		activeEvents,
+		rng: rngState,
+		eventRng: eventRngState,
+	};
 
 	const multipliers = eventMultipliers(next, content);
 
 	const action = next.activeAction;
+	let idleSec = elapsed;
 	if (action) {
 		if (action.kind === "gather") {
 			next = applyGather(next, action, elapsed, content, multipliers);
 		} else if (action.kind === "craft") {
 			next = applyCraft(next, action, elapsed, content, multipliers);
 		} else {
-			next = applyFight(next, action, elapsed, content, multipliers, random);
+			const result = applyFight(
+				next,
+				action,
+				elapsed,
+				content,
+				multipliers,
+				random,
+				now,
+			);
+			next = result.state;
+			idleSec = result.idleSec;
 		}
 	}
 
 	next = accrueInterest(next, content, elapsed);
-	next = regenerateHealth(next, content, elapsed);
+	next = regenerateHealth(next, content, idleSec);
 
 	const income = passiveIncomePerSec(next, content);
 	if (income > 0) {
@@ -395,8 +496,8 @@ export function tick(state: GameState, options: TickOptions): GameState {
 
 	const minutes = elapsed / 60;
 	const chance = Math.min(1, balance.eventChancePerMinute * minutes);
-	if (random() < chance) {
-		const spawned = spawnEvent(content, random);
+	if (eventRandom() < chance) {
+		const spawned = spawnEvent(content, eventRandom);
 		if (spawned.event) {
 			const active: ActiveEvent = {
 				id: spawned.event.id,
@@ -412,6 +513,7 @@ export function tick(state: GameState, options: TickOptions): GameState {
 	return {
 		...withMarket,
 		rng: rngState,
+		eventRng: eventRngState,
 		lastTickAt: now,
 		updatedAt: now,
 	};

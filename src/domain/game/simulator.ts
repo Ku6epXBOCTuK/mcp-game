@@ -12,6 +12,8 @@ import { sellItem } from "./trade.ts";
 import { claimQuest } from "./quest-rewards.ts";
 import { prestige, previewPrestige } from "./prestige.ts";
 import { questProgress, questCompleted } from "./quests.ts";
+import { forecastCombat, playerDpsFor } from "./combat.ts";
+import { maxHpFor } from "./health.ts";
 
 export const PAYBACK_MIN_SEC = 3 * 60;
 export const PAYBACK_MAX_SEC = 15 * 60;
@@ -241,15 +243,22 @@ function monsterValue(content: GameContent, monsterId: string): number {
 }
 
 function bestFight(state: GameState, content: GameContent): FightPlan | null {
-	const balance = content.balance;
-	const combatLevel = state.skills.combat?.level ?? 1;
-	const dps =
-		balance.playerDamageBase + balance.playerDamagePerLevel * combatLevel;
+	const dps = playerDpsFor(state, content);
+	const maxHp = maxHpFor(state, content);
 	let best: FightPlan | null = null;
 	for (const monster of content.monsters) {
 		if (!zoneUnlocked(state, content, monster.zone)) continue;
-		const seconds = monster.hp / dps;
-		if (seconds > 120) continue;
+		const forecast = forecastCombat({
+			monster,
+			monsterHpLeft: monster.hp,
+			nextMonsterHitInSec: monster.attackInterval,
+			playerDps: dps,
+			playerHp: state.health.hp,
+			playerMaxHp: maxHp,
+		});
+		const seconds = forecast.timeToKillSec;
+		if (seconds === null || seconds > 120) continue;
+		if (!forecast.canWin) continue;
 		const hits = Math.floor(seconds / monster.attackInterval);
 		const incoming = hits * monster.damage;
 		if (incoming >= state.health.hp * 0.6) continue;

@@ -38,13 +38,40 @@ export type SkillState = {
 
 export type ActiveActionKind = "gather" | "craft" | "fight";
 
-export type ActiveAction = {
-	kind: ActiveActionKind;
+export type GatherAction = {
+	kind: "gather";
 	skill: SkillId;
 	targetId: string;
 	startedAt: number;
 	endsAt: number;
 	progress: number;
+};
+
+export type CraftAction = {
+	kind: "craft";
+	skill: SkillId;
+	targetId: string;
+	startedAt: number;
+	endsAt: number;
+	progress: number;
+};
+
+export type FightAction = {
+	kind: "fight";
+	skill: "combat";
+	targetId: string;
+	startedAt: number;
+	endsAt: number;
+	monsterHpLeft: number;
+	monsterHitInSec: number;
+};
+
+export type ActiveAction = GatherAction | CraftAction | FightAction;
+
+export type CombatPolicy = {
+	potionAtHpPercent: number | null;
+	fleeAtHpPercent: number | null;
+	autoRepeat: boolean;
 };
 
 export type UpgradeLevels = Record<UpgradeId, number>;
@@ -103,6 +130,7 @@ export type GameCounters = {
 
 export type GameStats = {
 	totalGoldEarned: number;
+	deaths: number;
 };
 
 export type GameState = {
@@ -124,7 +152,9 @@ export type GameState = {
 	bank: BankState;
 	counters: GameCounters;
 	stats: GameStats;
+	combatPolicy: CombatPolicy;
 	rng: RngState;
+	eventRng: RngState;
 };
 
 export type GameEvent = {

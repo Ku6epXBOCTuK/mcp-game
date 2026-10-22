@@ -162,7 +162,8 @@ test("killing a monster fills the killed counter", () => {
 			targetId: "wolf",
 			startedAt: 1000,
 			endsAt: 2000,
-			progress: 0,
+			monsterHpLeft: 10,
+			monsterHitInSec: 5,
 		},
 	});
 	const after = tick(before, { content: CONTENT, now: 1010 });

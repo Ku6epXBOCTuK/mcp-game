@@ -1,5 +1,6 @@
 import {
 	SKILL_IDS,
+	type CombatPolicy,
 	type GameState,
 	type Inventory,
 	type PlayerId,
@@ -9,8 +10,59 @@ import {
 	type SkillState,
 	type UpgradeLevels,
 } from "./types.ts";
+import { DEFAULT_COMBAT_POLICY, startCombat } from "./combat.ts";
+import type { GameContent } from "../content/types.ts";
 
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 5;
+
+const EVENT_RNG_SALT = 0x9e3779b9;
+
+export function migrateState(
+	state: GameState,
+	content: GameContent,
+): GameState {
+	if (state.version >= STATE_VERSION) return state;
+	const legacyStats = state.stats as {
+		totalGoldEarned: number;
+		deaths?: number;
+	};
+	const legacyPolicy = (state as { combatPolicy?: CombatPolicy }).combatPolicy;
+	const legacyEventRng = (state as { eventRng?: RngState }).eventRng;
+	let next: GameState = {
+		...state,
+		version: STATE_VERSION,
+		stats: {
+			totalGoldEarned: legacyStats.totalGoldEarned,
+			deaths: legacyStats.deaths ?? 0,
+		},
+		combatPolicy: legacyPolicy ?? { ...DEFAULT_COMBAT_POLICY },
+		eventRng: legacyEventRng ?? {
+			seed: ((state.rng?.seed ?? 0) ^ EVENT_RNG_SALT) >>> 0,
+			counter: 0,
+		},
+	};
+	const action = next.activeAction;
+	if (action && action.kind === "fight") {
+		const legacyProgress =
+			(action as unknown as { progress?: number }).progress ?? 0;
+		const monster = content.monsters.find(
+			(entry) => entry.id === action.targetId,
+		);
+		next = {
+			...next,
+			activeAction: {
+				kind: "fight",
+				skill: "combat",
+				targetId: action.targetId,
+				startedAt: action.startedAt,
+				endsAt: action.endsAt,
+				monsterHpLeft: Math.max(0, (monster?.hp ?? 0) - legacyProgress),
+				monsterHitInSec: monster ? startCombat(monster).monsterHitInSec : 1,
+			},
+		};
+	}
+	return next;
+}
 
 export function createInitialState(
 	playerId: PlayerId,
@@ -35,8 +87,10 @@ export function createInitialState(
 		market: { seed, counter: 0, prices: {}, updatedAt: now },
 		bank: { deposits: 0, credit: 0, accruedAt: now },
 		counters: { gathered: {}, crafted: {}, killed: {} },
-		stats: { totalGoldEarned: 0 },
+		stats: { totalGoldEarned: 0, deaths: 0 },
+		combatPolicy: { ...DEFAULT_COMBAT_POLICY },
 		rng: { seed, counter: 0 },
+		eventRng: { seed: (seed ^ EVENT_RNG_SALT) >>> 0, counter: 0 },
 	};
 }
 

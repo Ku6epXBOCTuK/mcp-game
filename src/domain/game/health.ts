@@ -37,6 +37,38 @@ export function regenerateHealth(
 	return { ...state, health: { hp, maxHp } };
 }
 
+export function potionHealAmount(content: GameContent, maxHp: number): number {
+	const percent =
+		content.balance.potionHealthHealPercent ?? DEFAULT_POTION_HEAL_PERCENT;
+	return Math.max(1, Math.round(maxHp * percent));
+}
+
+export function consumePotion(
+	state: GameState,
+	content: GameContent,
+): GameState {
+	const maxHp = maxHpFor(state, content);
+	const heal = potionHealAmount(content, maxHp);
+	const inventory = { ...state.inventory };
+	const left = (inventory.potion_health ?? 0) - 1;
+	if (left <= 0) delete inventory.potion_health;
+	else inventory.potion_health = left;
+	return {
+		...state,
+		inventory,
+		health: { hp: Math.min(maxHp, state.health.hp + heal), maxHp },
+	};
+}
+
+export function consumePotions(state: GameState, qty: number): GameState {
+	if (qty <= 0) return state;
+	const inventory = { ...state.inventory };
+	const left = (inventory.potion_health ?? 0) - qty;
+	if (left <= 0) delete inventory.potion_health;
+	else inventory.potion_health = left;
+	return { ...state, inventory };
+}
+
 export function useItem(
 	state: GameState,
 	content: GameContent,
@@ -64,17 +96,6 @@ export function useItem(
 			feature: `use:${itemId}`,
 		});
 	}
-	const percent =
-		content.balance.potionHealthHealPercent ?? DEFAULT_POTION_HEAL_PERCENT;
-	const heal = Math.max(1, Math.round(maxHp * percent));
-	const inventory = { ...state.inventory };
-	const left = available - 1;
-	if (left <= 0) delete inventory[itemId];
-	else inventory[itemId] = left;
-	return ok({
-		...state,
-		inventory,
-		health: { hp: Math.min(maxHp, state.health.hp + heal), maxHp },
-		updatedAt: now,
-	});
+	const next = consumePotion(state, content);
+	return ok({ ...next, updatedAt: now });
 }

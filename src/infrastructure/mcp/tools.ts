@@ -2,8 +2,15 @@ import { z } from "zod";
 import type { GameService } from "../../application/use-cases/game-service.ts";
 import type { GameState } from "../../domain/game/types.ts";
 import type { SkillId } from "../../domain/game/types.ts";
+import type { GameContent } from "../../domain/content/types.ts";
 import { xpToNext } from "../../domain/shared/curves.ts";
 import { upgradePrice } from "../../domain/game/actions.ts";
+import {
+	forecastCombat,
+	playerDpsFor,
+	type CombatPolicyPatch,
+} from "../../domain/game/combat.ts";
+import { maxHpFor } from "../../domain/game/health.ts";
 import {
 	errorResult,
 	errorResultFromDomain,
@@ -26,7 +33,30 @@ function skillView(state: GameState, base: number, exponent: number) {
 	}));
 }
 
-function snapshot(state: GameState, now: number) {
+function optionalPercent(value: unknown): number | null | undefined {
+	if (value === undefined) return undefined;
+	if (value === null) return null;
+	return Number(value);
+}
+
+function activeForecast(state: GameState, content: GameContent) {
+	const action = state.activeAction;
+	if (!action || action.kind !== "fight") return null;
+	const monster = content.monsters.find(
+		(entry) => entry.id === action.targetId,
+	);
+	if (!monster) return null;
+	return forecastCombat({
+		monster,
+		monsterHpLeft: action.monsterHpLeft,
+		nextMonsterHitInSec: action.monsterHitInSec,
+		playerDps: playerDpsFor(state, content),
+		playerHp: state.health.hp,
+		playerMaxHp: maxHpFor(state, content),
+	});
+}
+
+function snapshot(state: GameState, content: GameContent, now: number) {
 	return {
 		playerId: state.playerId,
 		now,
@@ -42,6 +72,8 @@ function snapshot(state: GameState, now: number) {
 		quests: state.quests,
 		counters: state.counters,
 		stats: state.stats,
+		combatPolicy: state.combatPolicy,
+		combat: activeForecast(state, content),
 		marketUpdatedAt: state.market.updatedAt,
 	};
 }
@@ -59,7 +91,11 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			const result = await games.getState(context.playerId);
 			if (result.isErr()) return errorResultFromDomain(result.error);
 			return jsonResult(
-				snapshot(result.value.state, Math.floor(Date.now() / 1000)),
+				snapshot(
+					result.value.state,
+					result.value.content,
+					Math.floor(Date.now() / 1000),
+				),
 			);
 		},
 	};
@@ -265,11 +301,16 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_combat",
 		title: "Бой",
 		description:
-			"Карта зон и монстров со статами; fight — начать бой с монстром.",
+			"Карта зон и монстров со статами; fight — начать бой с монстром; " +
+			"forecast — прогноз боя (сколько секунд до убийства, до смерти, можно ли победить); " +
+			"policy — правила боя для афк-режима: когда пить зелье, когда отступать, повторять ли бой.",
 		scopes: ["read", "play"],
 		inputSchema: z.object({
-			command: z.enum(["map", "fight"]).default("map"),
+			command: z.enum(["map", "fight", "forecast", "policy"]).default("map"),
 			monsterId: z.string().optional(),
+			potionAtHpPercent: z.number().min(0).max(100).nullable().optional(),
+			fleeAtHpPercent: z.number().min(0).max(100).nullable().optional(),
+			autoRepeat: z.boolean().optional(),
 		}),
 		handler: async (args, context) => {
 			const command = String(args.command ?? "map");
@@ -280,6 +321,27 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 				const result = await games.fight(context.playerId, monsterId);
 				if (result.isErr()) return errorResultFromDomain(result.error);
 				return jsonResult(result.value.state.activeAction);
+			}
+			if (command === "forecast") {
+				const monsterId = args.monsterId ? String(args.monsterId) : undefined;
+				const result = await games.combatForecast(context.playerId, monsterId);
+				if (result.isErr()) return errorResultFromDomain(result.error);
+				if (!result.value)
+					return errorResult(
+						"UnknownCommand: для forecast нужен monsterId или активный бой.",
+					);
+				return jsonResult(result.value);
+			}
+			if (command === "policy") {
+				const patch: CombatPolicyPatch = {
+					potionAtHpPercent: optionalPercent(args.potionAtHpPercent),
+					fleeAtHpPercent: optionalPercent(args.fleeAtHpPercent),
+					autoRepeat:
+						typeof args.autoRepeat === "boolean" ? args.autoRepeat : undefined,
+				};
+				const result = await games.setCombatPolicy(context.playerId, patch);
+				if (result.isErr()) return errorResultFromDomain(result.error);
+				return jsonResult(result.value.state.combatPolicy);
 			}
 			const contextResult = await games.getState(context.playerId);
 			if (contextResult.isErr())

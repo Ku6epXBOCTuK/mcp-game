@@ -44,8 +44,52 @@ function startFight(
 			targetId: monsterId,
 			startedAt: 1000,
 			endsAt: 1000,
-			progress: 0,
+			monsterHpLeft:
+				content.monsters.find((entry) => entry.id === monsterId)?.hp ?? 1,
+			monsterHitInSec:
+				content.monsters.find((entry) => entry.id === monsterId)
+					?.attackInterval ?? 1,
 		},
+	};
+}
+
+type FightRun = {
+	outcome: "win" | "dead";
+	hp: number;
+	maxHp: number;
+};
+
+function runFight(
+	content: GameContent,
+	monsterId: string,
+	combatLevel: number,
+	pollSec: number,
+): FightRun {
+	let state = startFight(content, monsterId, combatLevel);
+	let clock = 1000;
+	for (let step = 0; step < 400; step += 1) {
+		clock += pollSec;
+		const killedBefore = state.counters.killed[monsterId] ?? 0;
+		state = tick(state, { content, now: clock });
+		if ((state.counters.killed[monsterId] ?? 0) > killedBefore) {
+			return {
+				outcome: "win",
+				hp: state.health.hp,
+				maxHp: state.health.maxHp,
+			};
+		}
+		if (!state.activeAction) {
+			return {
+				outcome: "dead",
+				hp: state.health.hp,
+				maxHp: state.health.maxHp,
+			};
+		}
+	}
+	return {
+		outcome: "dead",
+		hp: state.health.hp,
+		maxHp: state.health.maxHp,
 	};
 }
 
@@ -55,16 +99,7 @@ function fightOutcome(
 	combatLevel: number,
 	pollSec: number,
 ): "win" | "dead" {
-	let state = startFight(content, monsterId, combatLevel);
-	let clock = 1000;
-	for (let step = 0; step < 400; step += 1) {
-		clock += pollSec;
-		const killedBefore = state.counters.killed[monsterId] ?? 0;
-		state = tick(state, { content, now: clock });
-		if ((state.counters.killed[monsterId] ?? 0) > killedBefore) return "win";
-		if (!state.activeAction) return "dead";
-	}
-	return "dead";
+	return runFight(content, monsterId, combatLevel, pollSec).outcome;
 }
 
 function levelThatWins(
@@ -92,23 +127,90 @@ test("every monster is killable at a reachable combat level", async () => {
 	}
 });
 
-test("the health pool grows fast enough to cover the late content", async () => {
+test("the fight outcome does not depend on the poll interval", async () => {
+	const content = await loadContent();
+	for (const monster of content.monsters) {
+		const minimal = levelThatWins(content, monster.id, 1);
+		assert.ok(minimal !== null, `${monster.id} must be killable`);
+		for (const level of [Math.max(1, minimal - 1), minimal]) {
+			const reference = fightOutcome(content, monster.id, level, 1);
+			for (const pollSec of [5, 30, 60, 300]) {
+				assert.equal(
+					fightOutcome(content, monster.id, level, pollSec),
+					reference,
+					`${monster.id} at combat ${level} changed with a ${pollSec}s poll`,
+				);
+			}
+		}
+	}
+});
+
+test("the minimal winning level leaves the player alive", async () => {
+	const content = await loadContent();
+	for (const monster of content.monsters) {
+		const level = levelThatWins(content, monster.id, 1);
+		assert.ok(level !== null, `${monster.id} must be killable`);
+		const run = runFight(content, monster.id, level, 1);
+		assert.equal(run.outcome, "win");
+		assert.ok(run.hp > 0, `${monster.id} must be survived at combat ${level}`);
+	}
+});
+
+test("a comfortable fight against the late content keeps a real margin", async () => {
 	const content = await loadContent();
 	const dragon = content.monsters.find((entry) => entry.id === "dragon");
 	assert.ok(dragon);
-	const level = levelThatWins(content, dragon.id, 60);
-	assert.ok(level !== null);
-	const state = createInitialState("p1", 7, 1000);
-	const scaled: GameState = {
-		...state,
-		skills: { ...state.skills, combat: { id: "combat", level, xp: 0 } },
-	};
-	const maxHp = maxHpFor(scaled, content);
-	const burst = Math.floor(60 / dragon.attackInterval) * dragon.damage;
-	assert.ok(
-		maxHp >= burst,
-		`max hp ${maxHp} must survive one poll burst of ${burst}`,
+	const incoming = dragon.damage / dragon.attackInterval;
+	const level = Math.ceil(
+		(incoming * 1.3 - content.balance.playerDamageBase) /
+			content.balance.playerDamagePerLevel,
 	);
+	const run = runFight(content, dragon.id, level, 60);
+	assert.equal(run.outcome, "win");
+	assert.ok(
+		run.hp > run.maxHp * 0.3,
+		`hp ${run.hp} of ${run.maxHp} must survive the dragon fight`,
+	);
+});
+
+function runWindow(
+	content: GameContent,
+	monsterId: string,
+	combatLevel: number,
+	stepSec: number,
+	windowSec: number,
+) {
+	let state = startFight(content, monsterId, combatLevel);
+	let clock = 1000;
+	const end = 1000 + windowSec;
+	while (clock < end) {
+		clock = Math.min(clock + stepSec, end);
+		state = tick(state, { content, now: clock });
+	}
+	return {
+		hp: state.health.hp,
+		deaths: state.stats.deaths,
+		killed: state.counters.killed[monsterId] ?? 0,
+		xp: state.skills.combat?.xp ?? 0,
+		level: state.skills.combat?.level ?? 1,
+		inventory: state.inventory,
+		action: state.activeAction?.kind ?? null,
+	};
+}
+
+test("the whole afternoon of offline play does not depend on the poll interval", async () => {
+	const content = await loadContent();
+	const level = levelThatWins(content, "dragon", 1);
+	assert.ok(level !== null, "the dragon must be killable");
+	const windowSec = content.balance.offlineCapSec;
+	const reference = runWindow(content, "dragon", level, 1, windowSec);
+	for (const stepSec of [60, 600, windowSec]) {
+		assert.deepEqual(
+			runWindow(content, "dragon", level, stepSec, windowSec),
+			reference,
+			`the dragon fight changed with a ${stepSec}s poll`,
+		);
+	}
 });
 
 test("a potion restores a meaningful share of the health pool", async () => {

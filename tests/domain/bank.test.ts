@@ -180,7 +180,7 @@ test("repay without a debt is rejected", () => {
 test("prestige keeps the debt", () => {
 	const before = state({
 		upgrades: { bank: 1 },
-		stats: { totalGoldEarned: 5000 },
+		stats: { totalGoldEarned: 5000, deaths: 0 },
 		bank: { deposits: 0, credit: 300, accruedAt: 1000 },
 	});
 	const result = prestige(before, CONTENT, 2000);

@@ -5,8 +5,16 @@ import type { PlayerRepository } from "../ports/player-repository.ts";
 import type { GameContent } from "../../domain/content/types.ts";
 import type { DomainError } from "../../domain/shared/errors.ts";
 import { type Result, ok, err } from "neverthrow";
-import { createInitialState } from "../../domain/game/state.ts";
+import { createInitialState, migrateState } from "../../domain/game/state.ts";
 import { tick } from "../../domain/game/tick.ts";
+import {
+	forecastCombat,
+	playerDpsFor,
+	updateCombatPolicy,
+	type CombatForecast,
+	type CombatPolicyPatch,
+} from "../../domain/game/combat.ts";
+import { maxHpFor } from "../../domain/game/health.ts";
 import type {
 	GameEvent,
 	GameState,
@@ -87,7 +95,8 @@ export class GameService {
 			await this.games.save(playerId, state, 1);
 			return ok({ state, content, version: 1 });
 		}
-		const state = tick(stored.state, { content, now });
+		const migrated = migrateState(stored.state, content);
+		const state = tick(migrated, { content, now });
 		if (state === stored.state) {
 			return ok({ state, content, version: stored.version });
 		}
@@ -236,6 +245,49 @@ export class GameService {
 			},
 		]);
 		return ok(next);
+	}
+
+	async setCombatPolicy(
+		playerId: PlayerId,
+		patch: CombatPolicyPatch,
+	): Promise<UseCaseResult<GameContext>> {
+		const context = await this.loadContext(playerId);
+		if (context.isErr()) return err(context.error);
+		const now = this.clock.now();
+		const state = updateCombatPolicy(context.value.state, patch, now);
+		const next = { ...context.value, state };
+		await this.commit(playerId, next, [
+			{ ts: now, type: "combat.policy", payload: { ...state.combatPolicy } },
+		]);
+		return ok(next);
+	}
+
+	async combatForecast(
+		playerId: PlayerId,
+		monsterId?: string,
+	): Promise<UseCaseResult<CombatForecast | null>> {
+		const context = await this.loadContext(playerId);
+		if (context.isErr()) return err(context.error);
+		const { state, content } = context.value;
+		const action = state.activeAction;
+		const fighting = action && action.kind === "fight" ? action : null;
+		const targetId = monsterId ?? fighting?.targetId ?? null;
+		if (!targetId) return ok(null);
+		const monster = content.monsters.find((entry) => entry.id === targetId);
+		if (!monster) return ok(null);
+		const sameFight = fighting?.targetId === monster.id;
+		return ok(
+			forecastCombat({
+				monster,
+				monsterHpLeft: sameFight ? fighting.monsterHpLeft : monster.hp,
+				nextMonsterHitInSec: sameFight
+					? fighting.monsterHitInSec
+					: monster.attackInterval,
+				playerDps: playerDpsFor(state, content),
+				playerHp: state.health.hp,
+				playerMaxHp: maxHpFor(state, content),
+			}),
+		);
 	}
 
 	async sell(

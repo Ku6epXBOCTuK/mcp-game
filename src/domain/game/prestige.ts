@@ -79,7 +79,7 @@ export function prestige(
 		market: state.market,
 		bank: { deposits: 0, credit: state.bank.credit, accruedAt: now },
 		counters: { gathered: {}, crafted: {}, killed: {} },
-		stats: { totalGoldEarned: 0 },
+		stats: { totalGoldEarned: 0, deaths: state.stats.deaths },
 		prestige: {
 			points: totalPoints,
 			layers: preview.layers,

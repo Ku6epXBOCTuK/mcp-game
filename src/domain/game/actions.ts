@@ -19,6 +19,7 @@ import { creditLimit } from "./bank.ts";
 import { questCompleted } from "./quests.ts";
 import type {
 	ActiveAction,
+	FightAction,
 	GameState,
 	ItemId,
 	MonsterId,
@@ -131,13 +132,15 @@ export function startAction(
 			}
 		}
 	}
-	const action: ActiveAction = {
+	const action: FightAction = {
 		kind: "fight",
 		skill: "combat",
 		targetId: monster.id,
 		startedAt: now,
 		endsAt: now,
-		progress: 0,
+		monsterHpLeft: monster.hp,
+		monsterHitInSec:
+			monster.attackInterval > 0 ? monster.attackInterval : Infinity,
 	};
 	return ok({ ...state, activeAction: action, updatedAt: now });
 }

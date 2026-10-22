@@ -166,7 +166,8 @@ test("fighting a monster grants xp and drops when it dies", () => {
 			targetId: "wolf",
 			startedAt: 1000,
 			endsAt: 2000,
-			progress: 0,
+			monsterHpLeft: 10,
+			monsterHitInSec: 5,
 		},
 	});
 	const after = tick(before, { content: CONTENT, now: 1010 });
@@ -184,7 +185,8 @@ test("player death ends the fight and restores health", () => {
 			targetId: "wolf",
 			startedAt: 1000,
 			endsAt: 2000,
-			progress: 0,
+			monsterHpLeft: 10,
+			monsterHitInSec: 5,
 		},
 		health: { hp: 1, maxHp: 100 },
 	});

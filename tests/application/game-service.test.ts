@@ -7,6 +7,7 @@ import { SqliteGameRepository } from "../../src/infrastructure/persistence/game-
 import { FileContentRepository } from "../../src/infrastructure/content/loader.ts";
 import { GameService } from "../../src/application/use-cases/game-service.ts";
 import { fixedClock } from "../../src/application/ports/clock.ts";
+import { STATE_VERSION } from "../../src/domain/game/state.ts";
 
 const CONTENT_DIR = join(import.meta.dirname, "..", "..", "content");
 
@@ -27,7 +28,7 @@ test("service creates a state for a new player and persists it", async () => {
 	assert.equal(result.isOk(), true);
 	if (result.isOk()) {
 		assert.equal(result.value.state.playerId, "p1");
-		assert.equal(result.value.state.version, 3);
+		assert.equal(result.value.state.version, STATE_VERSION);
 		assert.ok(result.value.content.skills.length > 0);
 	}
 	db.close();

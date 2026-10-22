@@ -163,6 +163,60 @@ test("game_upgrades lists prices and buys a level", async () => {
 	db.close();
 });
 
+test("game_combat forecasts a fight and stores the combat policy", async () => {
+	const { client, db } = await makeHarness();
+	const forecast = await callTool(client, "game_combat", {
+		command: "forecast",
+		monsterId: "wolf",
+	});
+	assert.equal(forecast.isError, false);
+	const plan = JSON.parse(forecast.text) as {
+		monsterId: string;
+		canWin: boolean;
+		timeToKillSec: number | null;
+		timeToDieSec: number | null;
+	};
+	assert.equal(plan.monsterId, "wolf");
+	assert.equal(plan.canWin, true);
+	assert.ok((plan.timeToKillSec ?? 0) > 0);
+	assert.ok((plan.timeToDieSec ?? 0) > 0);
+
+	const policy = await callTool(client, "game_combat", {
+		command: "policy",
+		potionAtHpPercent: 40,
+		autoRepeat: true,
+	});
+	assert.equal(policy.isError, false);
+	const stored = JSON.parse(policy.text) as {
+		potionAtHpPercent: number | null;
+		autoRepeat: boolean;
+	};
+	assert.equal(stored.potionAtHpPercent, 40);
+	assert.equal(stored.autoRepeat, true);
+
+	const state = await callTool(client, "game_state");
+	const snapshot = JSON.parse(state.text) as {
+		combatPolicy: { potionAtHpPercent: number | null };
+		combat: { monsterId: string } | null;
+	};
+	assert.equal(snapshot.combatPolicy.potionAtHpPercent, 40);
+	assert.equal(snapshot.combat, null);
+
+	const started = await callTool(client, "game_combat", {
+		command: "fight",
+		monsterId: "rabbit",
+	});
+	assert.equal(started.isError, false);
+	const withFight = await callTool(client, "game_state");
+	const fighting = JSON.parse(withFight.text) as {
+		combat: { monsterId: string; monsterHpLeft: number } | null;
+	};
+	assert.equal(fighting.combat?.monsterId, "rabbit");
+	assert.ok((fighting.combat?.monsterHpLeft ?? 0) > 0);
+	await client.close();
+	db.close();
+});
+
 test("game_log shows recorded events", async () => {
 	const { client, db } = await makeHarness();
 	await callTool(client, "game_action", {

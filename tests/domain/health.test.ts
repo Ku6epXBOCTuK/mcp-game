@@ -128,7 +128,8 @@ test("a potion does not interrupt the current action", () => {
 		targetId: "wolf",
 		startedAt: 1000,
 		endsAt: 1000,
-		progress: 0,
+		monsterHpLeft: 10,
+		monsterHitInSec: 5,
 	};
 	const before = state({
 		activeAction: action,
