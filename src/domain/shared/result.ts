@@ -108,6 +108,14 @@ export function insufficientFunds(
 	});
 }
 
+export function traveling(travelUntil: number): Result<never, DomainError> {
+	return err({
+		code: "Traveling",
+		message: `Вы в пути. Действия будут доступны после ${new Date(travelUntil).toLocaleTimeString()}.`,
+		travelUntil,
+	});
+}
+
 export function zoneLocked(
 	zoneId: ZoneId,
 	reason: string,

@@ -10,12 +10,14 @@ import {
 	noActiveAction,
 	notEnoughResources,
 	skillTooLow,
+	traveling,
 	unknownCommand,
 	upgradeMaxLevel,
 	zoneLocked,
 } from "../shared/result.ts";
 import type { GameContent } from "../content/types.ts";
 import { creditLimit } from "./bank.ts";
+import { travelToZone } from "./travel.ts";
 import {
 	DEFAULT_COMBAT_POLICY,
 	forecastCombat,
@@ -43,6 +45,7 @@ import type { DomainError } from "../shared/errors.ts";
 export type StartActionCommand =
 	| { kind: "gather"; skill: SkillId; targetId: string }
 	| { kind: "craft"; recipeId: RecipeId }
+	| { kind: "switch"; zoneId: string }
 	| { kind: "fight"; monsterId: MonsterId };
 
 export const MAX_PAUSED_ACTIONS = 3;
@@ -95,6 +98,9 @@ export function startAction(
 ): Result<GameState, DomainError> {
 	if (state.activeAction) {
 		return alreadyActing(describeAction(state.activeAction));
+	}
+	if (state.travelUntil && state.travelUntil > now) {
+		return traveling(state.travelUntil);
 	}
 
 	if (command.kind === "gather") {
@@ -172,6 +178,31 @@ export function startAction(
 			activeAction: resumed.action,
 			updatedAt: now,
 		});
+	}
+
+	if (command.kind === "switch") {
+		const zone = content.zones.find((entry) => entry.id === command.zoneId);
+		if (!zone) return unknownCommand(`switch:${command.zoneId}`);
+		const unlock = zone.unlock;
+		if (unlock.kind === "quest") {
+			const quest = content.quests.find((entry) => entry.id === unlock.quest);
+			const status = quest ? state.quests[quest.id]?.status : undefined;
+			const done =
+				status === "completed" ||
+				status === "claimed" ||
+				(quest ? questCompleted(state, quest) : false);
+			if (!done) return zoneLocked(zone.id, `нужен квест \"${unlock.quest}\"`);
+		}
+		if (unlock.kind === "skillLevel") {
+			const level = state.skills[unlock.skill]?.level ?? 0;
+			if (level < unlock.level) {
+				return zoneLocked(
+					zone.id,
+					`нужен скилл \"${unlock.skill}\" уровня ${unlock.level} (есть ${level})`,
+				);
+			}
+		}
+		return ok(travelToZone(state, content, command.zoneId, now));
 	}
 
 	const monster = content.monsters.find(

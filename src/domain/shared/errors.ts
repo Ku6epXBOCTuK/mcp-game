@@ -53,7 +53,8 @@ export type DomainError =
 			id: string;
 			detail: string;
 	  }
-	| { code: "NotSupported"; message: string; feature: string };
+	| { code: "NotSupported"; message: string; feature: string }
+	| { code: "Traveling"; message: string; travelUntil: number };
 
 export type DomainErrorCode = DomainError["code"];
 

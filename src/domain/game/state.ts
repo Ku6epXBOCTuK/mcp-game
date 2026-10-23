@@ -66,9 +66,10 @@ export function migrateState(
 			crafted: legacyCounters.crafted ?? {},
 			craftedItems: legacyCounters.craftedItems ?? {},
 			killed: legacyCounters.killed ?? {},
-			unlockedFeatures: legacyUnlocked ?? [],
-			travelUntil: legacyTravelUntil ?? null,
 		},
+		unlockedFeatures: legacyUnlocked ?? [],
+		activeZone: content.zones[0]?.id ?? null,
+		travelUntil: legacyTravelUntil ?? null,
 	};
 	const action = next.activeAction;
 	if (action && action.kind === "fight") {
@@ -113,7 +114,12 @@ export function createInitialState(
 		activeEvents: [],
 		health: { hp: 100, maxHp: 100 },
 		upgrades: {},
-		prestige: { points: 0, layers: 0, runs: 0, multipliers: {} },
+		prestige: {
+			points: 0,
+			layers: 0,
+			runs: 0,
+			multipliers: { gold: 0, production: 0, xp: 0 },
+		},
 		quests: {},
 		market: { seed, counter: 0, prices: {}, updatedAt: now },
 		bank: { deposits: 0, credit: 0, accruedAt: now },
@@ -124,6 +130,7 @@ export function createInitialState(
 		rng: { seed, counter: 0 },
 		eventRng: { seed: (seed ^ EVENT_RNG_SALT) >>> 0, counter: 0 },
 		unlockedFeatures: [],
+		activeZone: null,
 		travelUntil: null,
 	};
 }
