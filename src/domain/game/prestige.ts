@@ -1,7 +1,8 @@
 import { type Result, ok, err } from "../shared/result.ts";
 import type { GameContent } from "../content/types.ts";
-import type { GameState } from "./types.ts";
+import type { GameState, PrestigeMultipliers } from "./types.ts";
 import { createSkills } from "./state.ts";
+import { prestigeMultiplier } from "../shared/curves.ts";
 import type { DomainError } from "../shared/errors.ts";
 
 export type PrestigePreview = {
@@ -23,6 +24,21 @@ export function prestigePoints(
 	return Math.floor(Math.sqrt(totalGoldEarned / threshold));
 }
 
+export function prestigeMultipliers(
+	points: number,
+	content: GameContent,
+): PrestigeMultipliers {
+	const production = prestigeMultiplier(
+		points,
+		content.balance.prestigeProductionExponent,
+	);
+	return {
+		gold: prestigeMultiplier(points, content.balance.prestigeGoldExponent),
+		production,
+		xp: production,
+	};
+}
+
 export function previewPrestige(
 	state: GameState,
 	content: GameContent,
@@ -31,12 +47,16 @@ export function previewPrestige(
 		content.balance.prestigeGoldThreshold ?? DEFAULT_PRESTIGE_GOLD_THRESHOLD;
 	const points = prestigePoints(state.stats.totalGoldEarned, threshold);
 	const layers = state.prestige.layers + 1;
+	const multipliers = prestigeMultipliers(
+		state.prestige.points + points,
+		content,
+	);
 	return {
 		points,
 		layers,
 		runs: state.prestige.runs,
-		goldMultiplier: 1 + points * 0.1,
-		productionMultiplier: 1 + points * 0.05,
+		goldMultiplier: multipliers.gold,
+		productionMultiplier: multipliers.production,
 	};
 }
 
@@ -57,11 +77,7 @@ export function prestige(
 	}
 
 	const totalPoints = state.prestige.points + preview.points;
-	const multipliers = {
-		...state.prestige.multipliers,
-		gold: 1 + totalPoints * 0.1,
-		production: 1 + totalPoints * 0.05,
-	};
+	const multipliers = prestigeMultipliers(totalPoints, content);
 	return ok({
 		...state,
 		wallet: { gold: 0, credits: 0 },

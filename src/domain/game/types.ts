@@ -83,11 +83,17 @@ export type CombatPolicy = {
 
 export type UpgradeLevels = Record<UpgradeId, number>;
 
+export type PrestigeMultipliers = {
+	gold: number;
+	production: number;
+	xp: number;
+};
+
 export type PrestigeState = {
 	points: number;
 	layers: number;
 	runs: number;
-	multipliers: Record<string, number>;
+	multipliers: PrestigeMultipliers;
 };
 
 export type QuestStatus =
