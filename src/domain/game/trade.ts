@@ -62,7 +62,8 @@ export function sellItem(
 		});
 	}
 	const price = Math.floor(marketSellPrice(state, content, itemId));
-	const gold = price * amount;
+	const em = eventMultipliers(state, content);
+	const gold = Math.floor(price * amount * em.gold);
 	const inventory = { ...state.inventory };
 	const left = available - amount;
 	if (left <= 0) delete inventory[itemId];
