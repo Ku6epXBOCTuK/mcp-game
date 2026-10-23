@@ -29,6 +29,7 @@ const actionSchema = z.object({
 		"use",
 		"sell",
 		"buy",
+		"switch",
 	]),
 	kind: z.enum(["gather", "craft", "fight"]).optional(),
 	skill: z.string().optional(),
@@ -38,6 +39,7 @@ const actionSchema = z.object({
 	upgradeId: z.string().optional(),
 	questId: z.string().optional(),
 	itemId: z.string().optional(),
+	zoneId: z.string().optional(),
 	qty: z.number().int().positive().optional(),
 	seconds: z.number().int().positive().optional(),
 });
@@ -148,6 +150,8 @@ async function handleAction(
 					String(args.itemId ?? ""),
 					Number(args.qty ?? 1),
 				);
+			case "switch":
+				return games.switchZone(playerId, String(args.zoneId ?? ""));
 		}
 	})();
 
@@ -249,6 +253,16 @@ async function buildSnapshot(
 					})),
 				},
 		counters: state.counters,
+		travel: {
+			activeZone: state.activeZone,
+			travelUntil: state.travelUntil,
+			unlockedFeatures: state.unlockedFeatures,
+		},
+		zones: content.zones.map((zone) => ({
+			id: zone.id,
+			name: zone.name,
+			unlock: zone.unlock,
+		})),
 		events: events.map((event) => ({
 			ts: event.ts,
 			type: event.type,

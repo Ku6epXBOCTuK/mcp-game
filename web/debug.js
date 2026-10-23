@@ -127,6 +127,37 @@ function render(data) {
 		],
 	]);
 
+	const travel = data.travel || {};
+	const nowMs = data.now || Date.now();
+	const travelUntil = travel.travelUntil;
+	const isTraveling = Boolean(travelUntil && travelUntil > nowMs);
+
+	const travelPairs = [["Регион", travel.activeZone ?? "не выбран"]];
+	if (isTraveling) {
+		const leftSec = Math.max(0, Math.ceil((travelUntil - nowMs) / 1000));
+		travelPairs.push(["В пути до", fmtTime(leftSec)]);
+		travelPairs.push(["Статус", "в пути"]);
+	} else {
+		travelPairs.push(["Путешествие", "доступно"]);
+	}
+	const features = travel.unlockedFeatures || [];
+	if (features.length > 0) {
+		travelPairs.push(["Разблокировано", features.join(", ")]);
+	}
+	renderDefinitions(el("travel"), travelPairs);
+
+	const zoneButtons = el("zone-buttons");
+	zoneButtons.replaceChildren();
+	for (const zone of data.zones || []) {
+		const isCurrent = zone.id === travel.activeZone;
+		const btn = button(
+			isCurrent ? `✓ ${zone.name}` : `→ ${zone.name}`,
+			() => void act({ command: "switch", zoneId: zone.id }),
+			data.canPlay === false || isCurrent || isTraveling,
+		);
+		zoneButtons.append(btn);
+	}
+
 	const action = data.activeAction;
 	if (action) {
 		lastAction = action;

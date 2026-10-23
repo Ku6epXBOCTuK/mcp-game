@@ -211,6 +211,13 @@ export class GameService {
 		return this.startAction(playerId, { kind: "fight", monsterId });
 	}
 
+	async switchZone(
+		playerId: PlayerId,
+		zoneId: string,
+	): Promise<UseCaseResult<GameContext>> {
+		return this.startAction(playerId, { kind: "switch", zoneId });
+	}
+
 	async gather(
 		playerId: PlayerId,
 		skill: SkillId,
