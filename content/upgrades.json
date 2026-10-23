@@ -101,7 +101,7 @@
 		"maxLevel": 5,
 		"costBase": 800,
 		"costGrowth": 1.35,
-		"effect": { "kind": "passiveIncome", "valuePerLevel": 0.02 }
+		"effect": { "kind": "passiveIncome", "valuePerLevel": 0.1 }
 	},
 	{
 		"id": "auction",
@@ -109,7 +109,7 @@
 		"maxLevel": 5,
 		"costBase": 900,
 		"costGrowth": 1.35,
-		"effect": { "kind": "passiveIncome", "valuePerLevel": 0.015 }
+		"effect": { "kind": "passiveIncome", "valuePerLevel": 0.075 }
 	},
 	{
 		"id": "teleport",
