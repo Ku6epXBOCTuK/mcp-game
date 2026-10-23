@@ -93,6 +93,7 @@ export function prestige(
 		upgrades: {},
 		quests: state.quests,
 		unlockedFeatures: state.unlockedFeatures,
+		travelUntil: state.travelUntil,
 		market: state.market,
 		bank: { deposits: 0, credit: state.bank.credit, accruedAt: now },
 		counters: state.counters,

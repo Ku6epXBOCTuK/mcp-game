@@ -33,6 +33,8 @@ export function migrateState(
 	const legacyBuffs = (state as { combatBuffs?: CombatBuff[] }).combatBuffs;
 	const legacyPaused = (state as { pausedActions?: ActiveAction[] })
 		.pausedActions;
+	const legacyTravelUntil = (state as { travelUntil?: number | null })
+		.travelUntil;
 	const legacyCounters = state.counters as {
 		gathered: Record<string, number>;
 		crafted: Record<string, number>;
@@ -65,6 +67,7 @@ export function migrateState(
 			craftedItems: legacyCounters.craftedItems ?? {},
 			killed: legacyCounters.killed ?? {},
 			unlockedFeatures: legacyUnlocked ?? [],
+			travelUntil: legacyTravelUntil ?? null,
 		},
 	};
 	const action = next.activeAction;
@@ -121,6 +124,7 @@ export function createInitialState(
 		rng: { seed, counter: 0 },
 		eventRng: { seed: (seed ^ EVENT_RNG_SALT) >>> 0, counter: 0 },
 		unlockedFeatures: [],
+		travelUntil: null,
 	};
 }
 

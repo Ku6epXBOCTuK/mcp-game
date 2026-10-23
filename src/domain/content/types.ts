@@ -146,6 +146,7 @@ export type BalanceContent = {
 	playerDamagePerLevel: number;
 	potionStrengthDamageMultiplier?: number | undefined;
 	elixirDamageMultiplier?: number | undefined;
+	travelTimeSec?: number | undefined;
 };
 
 export type GameContent = {

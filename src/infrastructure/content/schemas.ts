@@ -204,6 +204,7 @@ export const balanceSchema = z.object({
 	playerDamagePerLevel: z.number().min(0),
 	potionStrengthDamageMultiplier: z.number().min(1).optional(),
 	elixirDamageMultiplier: z.number().min(1).optional(),
+	travelTimeSec: z.number().min(0).optional(),
 }) satisfies z.ZodType<BalanceContent>;
 
 export const skillsFileSchema = z.array(skillSchema);

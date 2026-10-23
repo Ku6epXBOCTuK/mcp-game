@@ -172,6 +172,7 @@ export type GameState = {
 	rng: RngState;
 	eventRng: RngState;
 	unlockedFeatures: string[];
+	travelUntil: number | null;
 };
 
 export type GameEvent = {

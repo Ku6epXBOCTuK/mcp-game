@@ -64,5 +64,6 @@
 	"playerDamageBase": 1,
 	"playerDamagePerLevel": 0.5,
 	"potionStrengthDamageMultiplier": 1.5,
-	"elixirDamageMultiplier": 2.0
+	"elixirDamageMultiplier": 2.0,
+	"travelTimeSec": 30
 }
