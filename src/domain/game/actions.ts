@@ -349,10 +349,20 @@ export function buyUpgrade(
 	if (state.wallet.gold < cost) {
 		return insufficientFunds(cost, state.wallet.gold);
 	}
+	const unlocked =
+		upgrade.effect.kind === "unlock"
+			? [
+					...new Set([
+						...(state.unlockedFeatures ?? []),
+						upgrade.effect.feature,
+					]),
+				]
+			: state.unlockedFeatures;
 	return ok({
 		...state,
 		wallet: { ...state.wallet, gold: state.wallet.gold - cost },
 		upgrades: { ...state.upgrades, [upgradeId]: level + 1 },
+		unlockedFeatures: unlocked,
 		updatedAt: now,
 	});
 }

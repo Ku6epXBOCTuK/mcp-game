@@ -39,6 +39,8 @@ export function migrateState(
 		craftedItems?: Record<string, number>;
 		killed: Record<string, number>;
 	};
+	const legacyUnlocked = (state as { unlockedFeatures?: string[] })
+		.unlockedFeatures;
 	let next: GameState = {
 		...state,
 		version: STATE_VERSION,
@@ -62,6 +64,7 @@ export function migrateState(
 			crafted: legacyCounters.crafted ?? {},
 			craftedItems: legacyCounters.craftedItems ?? {},
 			killed: legacyCounters.killed ?? {},
+			unlockedFeatures: legacyUnlocked ?? [],
 		},
 	};
 	const action = next.activeAction;
@@ -117,6 +120,7 @@ export function createInitialState(
 		combatBuffs: [],
 		rng: { seed, counter: 0 },
 		eventRng: { seed: (seed ^ EVENT_RNG_SALT) >>> 0, counter: 0 },
+		unlockedFeatures: [],
 	};
 }
 

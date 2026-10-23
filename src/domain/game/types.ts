@@ -171,6 +171,7 @@ export type GameState = {
 	combatBuffs: CombatBuff[];
 	rng: RngState;
 	eventRng: RngState;
+	unlockedFeatures: string[];
 };
 
 export type GameEvent = {
