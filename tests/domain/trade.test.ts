@@ -99,3 +99,20 @@ test("enough sales raise the trading level", async () => {
 	assert.ok(state.skills.trading.level > 1, "trading level did not grow");
 	assert.ok(state.skills.trading.xp >= 0);
 });
+
+test("buying increments the bought counter", async () => {
+	const content = await loadContent();
+	const state = { ...stateWith({}), wallet: { gold: 1000, credits: 0 } };
+	const first = buyItem(state, content, "wood", 5, START);
+	assert.equal(first.isOk(), true);
+	if (first.isErr()) return;
+	assert.equal(first.value.inventory.wood, 5);
+	assert.equal(first.value.counters.bought.wood, 5);
+
+	const second = buyItem(first.value, content, "wood", 2, START);
+	assert.equal(second.isOk(), true);
+	if (second.isErr()) return;
+	assert.equal(second.value.counters.bought.wood, 7);
+	assert.equal(second.value.inventory.wood, 7);
+	assert.ok(second.value.wallet.gold < first.value.wallet.gold);
+});

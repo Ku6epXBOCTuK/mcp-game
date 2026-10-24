@@ -22,7 +22,8 @@ function stepProgress(state: GameState, step: QuestStep): QuestStepProgress {
 		case "collect":
 			current =
 				(state.counters.gathered[step.target] ?? 0) +
-				(state.counters.craftedItems[step.target] ?? 0);
+				(state.counters.craftedItems[step.target] ?? 0) +
+				(state.counters.bought[step.target] ?? 0);
 			break;
 		case "craft":
 			current = state.counters.crafted[step.target] ?? 0;

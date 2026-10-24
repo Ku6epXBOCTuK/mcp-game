@@ -15,7 +15,7 @@ import {
 import { DEFAULT_COMBAT_POLICY, startCombat } from "./combat.ts";
 import type { GameContent } from "../content/types.ts";
 
-export const STATE_VERSION = 8;
+export const STATE_VERSION = 9;
 
 const EVENT_RNG_SALT = 0x9e3779b9;
 
@@ -39,6 +39,7 @@ export function migrateState(
 		gathered: Record<string, number>;
 		crafted: Record<string, number>;
 		craftedItems?: Record<string, number>;
+		bought?: Record<string, number>;
 		killed: Record<string, number>;
 	};
 	const legacyUnlocked = (state as { unlockedFeatures?: string[] })
@@ -65,6 +66,7 @@ export function migrateState(
 			gathered: legacyCounters.gathered ?? {},
 			crafted: legacyCounters.crafted ?? {},
 			craftedItems: legacyCounters.craftedItems ?? {},
+			bought: legacyCounters.bought ?? {},
 			killed: legacyCounters.killed ?? {},
 		},
 		unlockedFeatures: legacyUnlocked ?? [],
@@ -123,7 +125,13 @@ export function createInitialState(
 		quests: {},
 		market: { seed, counter: 0, prices: {}, updatedAt: now },
 		bank: { deposits: 0, credit: 0, accruedAt: now },
-		counters: { gathered: {}, crafted: {}, craftedItems: {}, killed: {} },
+		counters: {
+			gathered: {},
+			crafted: {},
+			craftedItems: {},
+			bought: {},
+			killed: {},
+		},
 		stats: { totalGoldEarned: 0, deaths: 0 },
 		combatPolicy: { ...DEFAULT_COMBAT_POLICY },
 		combatBuffs: [],

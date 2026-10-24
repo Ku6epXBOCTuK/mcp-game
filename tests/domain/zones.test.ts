@@ -95,6 +95,7 @@ test("a quest-gated zone opens as soon as the quest steps are done", () => {
 			gathered: {},
 			crafted: {},
 			craftedItems: {},
+			bought: {},
 			killed: { wolf: 1 },
 		},
 	});
@@ -114,6 +115,7 @@ test("a claimed quest keeps its zone open", () => {
 				gathered: {},
 				crafted: {},
 				craftedItems: {},
+				bought: {},
 				killed: { wolf: 1 },
 			},
 		}),

@@ -121,6 +121,13 @@ export function buyItem(
 			...state.inventory,
 			[itemId]: (state.inventory[itemId] ?? 0) + amount,
 		},
+		counters: {
+			...state.counters,
+			bought: {
+				...state.counters.bought,
+				[itemId]: (state.counters.bought[itemId] ?? 0) + amount,
+			},
+		},
 		wallet: { ...state.wallet, gold: state.wallet.gold - cost },
 		updatedAt: now,
 	});

@@ -332,6 +332,41 @@ test("the early chain reaches make_axe without iron", async () => {
 	db.close();
 });
 
+test("a bought axe counts toward the first quest", async () => {
+	const db = openMemoryDatabase();
+	let now = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => now },
+	});
+
+	const wood = await service.gather("p1", "chopping", "wood");
+	assert.equal(wood.isOk(), true);
+	now += 60;
+	await service.advanceTime("p1", 60);
+
+	const sold = await service.sell("p1", "wood", 100);
+	assert.equal(sold.isOk(), true);
+	const bought = await service.buy("p1", "axe", 1);
+	assert.equal(bought.isOk(), true);
+
+	const progress = await service.questProgress("p1");
+	assert.equal(progress.isOk(), true);
+	if (progress.isOk()) {
+		const first = progress.value.find(
+			(entry) => entry.quest.id === "quest_first_wood",
+		);
+		assert.ok(first);
+		const axeStep = first.steps.find((step) => step.step.target === "axe");
+		assert.ok(axeStep);
+		assert.equal(axeStep.current, 1);
+		assert.equal(axeStep.done, true);
+	}
+	db.close();
+});
+
 test("transitionEvents reports deaths and level-ups", async () => {
 	const { service, db } = makeService();
 	const result = await service.getState("p1");

@@ -141,6 +141,7 @@ export type GameCounters = {
 	gathered: Record<ItemId, number>;
 	crafted: Record<RecipeId, number>;
 	craftedItems: Record<ItemId, number>;
+	bought: Record<ItemId, number>;
 	killed: Record<MonsterId, number>;
 };
 

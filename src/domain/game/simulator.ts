@@ -425,6 +425,28 @@ function skillPlan(
 	return null;
 }
 
+// NOTE: a collect step may target a craftable item, so its producer recipe
+// needs the same skill and input handling as a direct craft step.
+function craftRecipePlan(
+	state: GameState,
+	content: GameContent,
+	questId: string,
+	recipe: GameContent["recipes"][number],
+): QuestPlan | null {
+	if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) {
+		const skill = skillPlan(state, content, recipe.skill);
+		return skill ? { questId, ...skill, leveling: true } : null;
+	}
+	const missing = recipe.inputs.find(
+		(input) => (state.inventory[input.item] ?? 0) < input.qty,
+	);
+	if (missing) {
+		const plan = inputPlan(state, content, missing.item);
+		return plan ? { questId, ...plan, leveling: false } : null;
+	}
+	return { questId, kind: "craft", targetId: recipe.id, leveling: false };
+}
+
 function questStepPlan(
 	state: GameState,
 	content: GameContent,
@@ -453,35 +475,14 @@ function questStepPlan(
 				(candidate) => candidate.output.item === step.target,
 			);
 			if (!recipe) return null;
-			return {
-				questId: quest.id,
-				kind: "craft",
-				targetId: recipe.id,
-				leveling: false,
-			};
+			return craftRecipePlan(state, content, quest.id, recipe);
 		}
 		if (step.kind === "craft") {
 			const recipe = content.recipes.find(
 				(candidate) => candidate.id === step.target,
 			);
 			if (!recipe) return null;
-			if ((state.skills[recipe.skill]?.level ?? 0) < recipe.skillLevel) {
-				const skill = skillPlan(state, content, recipe.skill);
-				return skill ? { questId: quest.id, ...skill, leveling: true } : null;
-			}
-			const missing = recipe.inputs.find(
-				(input) => (state.inventory[input.item] ?? 0) < input.qty,
-			);
-			if (missing) {
-				const plan = inputPlan(state, content, missing.item);
-				return plan ? { questId: quest.id, ...plan, leveling: false } : null;
-			}
-			return {
-				questId: quest.id,
-				kind: "craft",
-				targetId: recipe.id,
-				leveling: false,
-			};
+			return craftRecipePlan(state, content, quest.id, recipe);
 		}
 		if (step.kind === "kill") {
 			const monster = content.monsters.find(
@@ -514,7 +515,7 @@ function questPlan(state: GameState, content: GameContent): QuestPlan | null {
 		if (status === "claimed" || status === "completed") continue;
 		const plan = questStepPlan(state, content, quest);
 		if (!plan) continue;
-		const keepRecipeId = questCraftRecipe(state, quest);
+		const keepRecipeId = questCraftRecipe(state, content, quest);
 		return keepRecipeId ? { ...plan, keepRecipeId } : plan;
 	}
 	return null;
@@ -522,12 +523,19 @@ function questPlan(state: GameState, content: GameContent): QuestPlan | null {
 
 function questCraftRecipe(
 	state: GameState,
+	content: GameContent,
 	quest: GameContent["quests"][number],
 ): string | undefined {
 	const progress = questProgress(state, quest);
 	for (const entry of progress.steps) {
 		if (entry.done) continue;
 		if (entry.step.kind === "craft") return entry.step.target;
+		if (entry.step.kind === "collect") {
+			const producer = content.recipes.find(
+				(candidate) => candidate.output.item === entry.step.target,
+			);
+			if (producer) return producer.id;
+		}
 	}
 	return undefined;
 }

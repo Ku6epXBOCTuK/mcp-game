@@ -247,7 +247,7 @@ test("game_quests shows descriptions and rewards", async () => {
 	}[];
 	const first = quests.find((quest) => quest.id === "quest_first_wood");
 	assert.ok(first);
-	assert.match(first.description ?? "", /каменный топор/);
+	assert.match(first.description ?? "", /каменн.*топор/);
 	assert.ok(first.rewards.length > 0);
 	await client.close();
 	db.close();

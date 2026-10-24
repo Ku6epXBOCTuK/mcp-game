@@ -1,13 +1,16 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { SKILL_IDS, type GameState } from "../../src/domain/game/types.ts";
 import {
 	STATE_VERSION,
 	createInitialState,
+	migrateState,
 	withInventory,
 	withUpgrade,
 	withWallet,
 } from "../../src/domain/game/state.ts";
+import { FileContentRepository } from "../../src/infrastructure/content/loader.ts";
 
 function base(): GameState {
 	return createInitialState("player-1", 12345, 1000);
@@ -56,4 +59,32 @@ test("inventory drops entries that reach zero", () => {
 	const state = withInventory(base(), "wood", 2);
 	const emptied = withInventory(state, "wood", -2);
 	assert.equal("wood" in emptied.inventory, false);
+});
+
+test("initial counters include the bought ledger", () => {
+	const state = base();
+	assert.deepEqual(state.counters.bought, {});
+});
+
+test("migration backfills the bought counter", async () => {
+	const repo = new FileContentRepository(
+		join(import.meta.dirname, "..", "..", "content"),
+	);
+	const contentResult = await repo.load();
+	assert.equal(contentResult.isOk(), true);
+	if (!contentResult.isOk()) return;
+	const legacy = {
+		...base(),
+		version: STATE_VERSION - 1,
+		counters: {
+			gathered: { wood: 5 },
+			crafted: {},
+			craftedItems: {},
+			killed: {},
+		},
+	} as unknown as GameState;
+	const migrated = migrateState(legacy, contentResult.value);
+	assert.equal(migrated.version, STATE_VERSION);
+	assert.deepEqual(migrated.counters.bought, {});
+	assert.equal(migrated.counters.gathered.wood, 5);
 });
