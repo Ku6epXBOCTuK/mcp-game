@@ -220,10 +220,18 @@ function applyCraft(
 			},
 		};
 	}
+	// NOTE: inputs bound the loop: time spent after they run out produces
+	// nothing, so it must neither grant xp nor keep the action alive.
+	const xpElapsed =
+		affordable <= 0
+			? 0
+			: rawProduced > 0
+				? (elapsed * produced) / rawProduced
+				: elapsed;
 	next = gainXp(
 		next,
 		recipe.skill,
-		elapsed *
+		xpElapsed *
 			(balance.xpPerSecond ?? 1) *
 			multipliers.xp *
 			upgradeMultiplier(next, content, "xpMultiplier", recipe.skill),
@@ -232,7 +240,8 @@ function applyCraft(
 	);
 	return {
 		...next,
-		activeAction: { ...action, progress: after },
+		activeAction:
+			affordable - produced <= 0 ? null : { ...action, progress: after },
 	};
 }
 

@@ -1,10 +1,11 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
-import { tick } from "../../src/domain/game/tick.ts";
-import { createInitialState } from "../../src/domain/game/state.ts";
-import { marketSellPrice } from "../../src/domain/game/market.ts";
+import { test } from "vitest";
 import type { GameContent } from "../../src/domain/content/types.ts";
+import { marketSellPrice } from "../../src/domain/game/market.ts";
+import { createInitialState } from "../../src/domain/game/state.ts";
+import { tick } from "../../src/domain/game/tick.ts";
 import type { ActiveAction, GameState } from "../../src/domain/game/types.ts";
+import { xpToNext } from "../../src/domain/shared/curves.ts";
 
 const CONTENT: GameContent = {
 	skills: [],
@@ -152,6 +153,68 @@ test("crafting stops when inputs run out", () => {
 	const after = tick(before, { content: CONTENT, now: 1060 });
 	assert.equal(after.counters.crafted.make_plank, 2);
 	assert.equal(after.inventory.wood, undefined);
+	assert.equal(after.activeAction, null);
+});
+
+test("a craft loop with no inputs ends instead of idling for xp", () => {
+	const before = state({
+		activeAction: {
+			kind: "craft",
+			skill: "crafting",
+			targetId: "make_plank",
+			startedAt: 1000,
+			endsAt: 2000,
+			progress: 0,
+		},
+		inventory: {},
+	});
+	const after = tick(before, { content: CONTENT, now: 1600 });
+	assert.equal(after.activeAction, null);
+	assert.equal(after.skills.crafting.xp, 0);
+});
+
+test("crafting xp covers only the units produced before inputs ran out", () => {
+	const action: ActiveAction = {
+		kind: "craft",
+		skill: "crafting",
+		targetId: "make_plank",
+		startedAt: 1000,
+		endsAt: 2000,
+		progress: 0,
+	};
+	// NOTE: 60s at speed 1.1 over a 10s recipe = 6 raw units: the full run affords
+	// 7 of them and keeps going, the limited one affords 2 and stops.
+	const full = tick(state({ activeAction: action, inventory: { wood: 14 } }), {
+		content: CONTENT,
+		now: 1060,
+	});
+	const limited = tick(
+		state({ activeAction: action, inventory: { wood: 4 } }),
+		{
+			content: CONTENT,
+			now: 1060,
+		},
+	);
+	assert.equal(full.counters.crafted.make_plank, 6);
+	assert.equal(limited.counters.crafted.make_plank, 2);
+	assert.ok(full.activeAction?.kind === "craft");
+	assert.equal(limited.activeAction, null);
+	// NOTE: xp is stored as level + leftover, so sum the crossed level requirements
+	// back in before comparing: the curve is not linear across levels.
+	const granted = (skill: { level: number; xp: number }): number => {
+		let total = skill.xp;
+		for (let level = 1; level < skill.level; level += 1) {
+			total += xpToNext(
+				level,
+				CONTENT.balance.xpBase,
+				CONTENT.balance.xpExponent,
+			);
+		}
+		return total;
+	};
+	const ratio =
+		granted(limited.skills.crafting) / granted(full.skills.crafting);
+	assert.ok(Math.abs(ratio - 2 / 6) < 1e-9, `xp ratio ${ratio} != 2/6`);
 });
 
 test("killing a monster fills the killed counter", () => {

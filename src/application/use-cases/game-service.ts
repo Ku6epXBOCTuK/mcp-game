@@ -47,6 +47,30 @@ export type GameContext = {
 
 export type UseCaseResult<T> = Result<T, DomainError>;
 
+// NOTE: tick ends a craft loop when its inputs run out; the service turns that
+// transition into an event, because the domain layer does not write to the log.
+function exhaustedCraftEvent(
+	before: GameState,
+	after: GameState,
+	content: GameContent,
+	ts: number,
+): GameEvent | null {
+	const action = before.activeAction;
+	if (!action || action.kind !== "craft") return null;
+	if (after.activeAction) return null;
+	const recipe = content.recipes.find((entry) => entry.id === action.targetId);
+	if (!recipe) return null;
+	const missing = recipe.inputs.find(
+		(input) => (after.inventory[input.item] ?? 0) < input.qty,
+	);
+	if (!missing) return null;
+	return {
+		ts,
+		type: "action.exhausted",
+		payload: { recipeId: recipe.id, item: missing.item },
+	};
+}
+
 export class GameService {
 	private readonly games: GameRepository;
 	private readonly players: PlayerRepository;
@@ -104,6 +128,10 @@ export class GameService {
 		}
 		const version = stored.version + 1;
 		await this.games.save(playerId, state, version);
+		const exhausted = exhaustedCraftEvent(migrated, state, content, now);
+		if (exhausted) {
+			await this.games.appendEvents(playerId, [exhausted]);
+		}
 		return ok({ state, content, version });
 	}
 
@@ -509,9 +537,17 @@ export class GameService {
 			state,
 			version: context.value.version + 1,
 		};
-		await this.commit(playerId, next, [
+		const exhausted = exhaustedCraftEvent(
+			context.value.state,
+			ticked,
+			context.value.content,
+			realNow,
+		);
+		const events: GameEvent[] = [
 			{ ts: realNow, type: "time.advanced", payload: { seconds } },
-		]);
+		];
+		if (exhausted) events.push(exhausted);
+		await this.commit(playerId, next, events);
 		return ok(next);
 	}
 

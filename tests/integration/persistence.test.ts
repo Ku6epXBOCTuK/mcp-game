@@ -184,3 +184,39 @@ test("the event feed keeps a bounded window", async () => {
 		assert.equal(limited.length, 2);
 	});
 });
+
+test("a craft loop that runs out of inputs ends and is reported in the event feed", async () => {
+	await withFileDb(async ({ service }) => {
+		await service.gather("p1", "magic", "berry");
+		for (let i = 0; i < 30; i += 1) {
+			await service.advanceTime("p1", 60);
+			const snap = await service.getState("p1");
+			const berries = snap.isOk() ? (snap.value.state.inventory.berry ?? 0) : 0;
+			if (berries >= 6) {
+				if (berries > 6) await service.sell("p1", "berry", berries - 6);
+				break;
+			}
+		}
+		await service.cancelAction("p1");
+		const started = await service.craft("p1", "mill_flour");
+		assert.equal(started.isOk(), true);
+
+		await service.advanceTime("p1", 300);
+		const final = await service.getState("p1");
+		assert.equal(final.isOk(), true);
+		if (final.isOk()) {
+			assert.equal(final.value.state.activeAction, null);
+			assert.equal(final.value.state.inventory.flour, 1);
+			assert.equal(final.value.state.inventory.berry, undefined);
+		}
+		const events = await service.listEvents("p1", 50);
+		assert.ok(
+			events.some(
+				(event) =>
+					event.type === "action.exhausted" &&
+					event.payload.recipeId === "mill_flour",
+			),
+			"the exhaustion must be reported in the event feed",
+		);
+	});
+});
