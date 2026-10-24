@@ -30,6 +30,8 @@ export type TickOptions = {
 	now: number;
 };
 
+const DEFAULT_HUNTING_XP_SHARE = 0.5;
+
 function skillLevelOf(state: GameState, skill: SkillId, bonus: number): number {
 	const current = state.skills[skill];
 	return (current?.level ?? 1) + bonus;
@@ -368,6 +370,21 @@ function grantKill(
 		balance.xpBase,
 		balance.xpExponent,
 	);
+	// NOTE: hunting lives from hunting animals: a kill of an animal shares its
+	// xp with the hunting skill, combat stays the primary beneficiary.
+	if (monster.animal) {
+		const share = balance.huntingXpShare ?? DEFAULT_HUNTING_XP_SHARE;
+		next = gainXp(
+			next,
+			"hunting",
+			monster.xp *
+				share *
+				multipliers.xp *
+				upgradeMultiplier(next, content, "xpMultiplier", "hunting"),
+			balance.xpBase,
+			balance.xpExponent,
+		);
+	}
 	next = rollDrops(next, monster, random);
 	next = {
 		...next,

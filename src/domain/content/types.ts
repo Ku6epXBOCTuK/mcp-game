@@ -64,6 +64,8 @@ export type MonsterContent = {
 	damage: number;
 	attackInterval: number;
 	xp: number;
+	// NOTE: animal kills share their xp with the hunting skill.
+	animal?: boolean | undefined;
 	dropTable: DropContent[];
 };
 
@@ -126,6 +128,7 @@ export type BalanceContent = {
 	tradingDiscountPerLevel: number;
 	tradingDiscountMax: number;
 	tradingXpPerGold?: number | undefined;
+	huntingXpShare?: number | undefined;
 	marketDriftRange: number;
 	marketDriftIntervalSec: number;
 	marketReversion?: number | undefined;

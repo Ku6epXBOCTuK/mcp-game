@@ -7,6 +7,7 @@
 		"damage": 1,
 		"attackInterval": 2,
 		"xp": 4,
+		"animal": true,
 		"dropTable": [
 			{ "item": "meat", "chance": 0.6, "qty": 1 },
 			{ "item": "hide", "chance": 0.3, "qty": 1 }
@@ -20,6 +21,7 @@
 		"damage": 3,
 		"attackInterval": 2,
 		"xp": 9,
+		"animal": true,
 		"dropTable": [
 			{ "item": "pelt", "chance": 0.7, "qty": 1 },
 			{ "item": "meat", "chance": 0.5, "qty": 2 },
@@ -34,6 +36,7 @@
 		"damage": 5,
 		"attackInterval": 2.2,
 		"xp": 15,
+		"animal": true,
 		"dropTable": [
 			{ "item": "meat", "chance": 0.9, "qty": 3 },
 			{ "item": "hide", "chance": 0.5, "qty": 1 },
@@ -48,6 +51,7 @@
 		"damage": 7,
 		"attackInterval": 2.4,
 		"xp": 22,
+		"animal": true,
 		"dropTable": [
 			{ "item": "stone", "chance": 0.9, "qty": 3 },
 			{ "item": "iron_ore", "chance": 0.25, "qty": 1 }
@@ -61,6 +65,7 @@
 		"damage": 6,
 		"attackInterval": 1.8,
 		"xp": 18,
+		"animal": true,
 		"dropTable": [
 			{ "item": "meat", "chance": 0.5, "qty": 1 },
 			{ "item": "coal", "chance": 0.35, "qty": 1 },
@@ -131,6 +136,7 @@
 		"damage": 20,
 		"attackInterval": 1.9,
 		"xp": 75,
+		"animal": true,
 		"dropTable": [
 			{ "item": "string", "chance": 0.7, "qty": 2 },
 			{ "item": "venom", "chance": 0.3, "qty": 1 },

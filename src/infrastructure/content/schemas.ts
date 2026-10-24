@@ -108,6 +108,7 @@ export const monsterSchema = z.object({
 	damage: z.number().positive(),
 	attackInterval: z.number().positive(),
 	xp: z.number().nonnegative(),
+	animal: z.boolean().optional(),
 	dropTable: z.array(dropSchema).min(1),
 }) satisfies z.ZodType<MonsterContent>;
 
@@ -184,6 +185,7 @@ export const balanceSchema = z.object({
 	tradingDiscountPerLevel: z.number().min(0),
 	tradingDiscountMax: z.number().min(0),
 	tradingXpPerGold: z.number().min(0).optional(),
+	huntingXpShare: z.number().min(0).max(1).optional(),
 	marketDriftRange: z.number().min(0),
 	marketDriftIntervalSec: z.number().int().min(1),
 	marketReversion: z.number().min(0).max(1).optional(),

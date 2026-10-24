@@ -54,6 +54,17 @@ const CONTENT: GameContent = {
 			damage: 1,
 			attackInterval: 5,
 			xp: 20,
+			animal: true,
+			dropTable: [{ item: "pelt", chance: 1, qty: 1 }],
+		},
+		{
+			id: "golem",
+			name: "Голем",
+			zone: "cave",
+			hp: 10,
+			damage: 1,
+			attackInterval: 5,
+			xp: 20,
 			dropTable: [{ item: "pelt", chance: 1, qty: 1 }],
 		},
 	],
@@ -79,6 +90,7 @@ const CONTENT: GameContent = {
 		skillRateK: 0.1,
 		xpBase: 15,
 		xpExponent: 1.4,
+		huntingXpShare: 0.5,
 		tradingDiscountPerLevel: 0.02,
 		tradingDiscountMax: 0.4,
 		marketDriftRange: 0.3,
@@ -231,6 +243,35 @@ test("killing a monster fills the killed counter", () => {
 	});
 	const after = tick(before, { content: CONTENT, now: 1010 });
 	assert.equal(after.counters.killed.wolf, 1);
+});
+
+test("killing an animal shares its xp with hunting", () => {
+	const fight = (monsterId: string): ActiveAction => ({
+		kind: "fight",
+		skill: "combat",
+		targetId: monsterId,
+		startedAt: 1000,
+		endsAt: 2000,
+		monsterHpLeft: 10,
+		monsterHitInSec: 5,
+	});
+	// NOTE: 20 xp crosses the first level (15) and leaves 5; hunting gets
+	// huntingXpShare (0.5) of it, which stays below the first level.
+	const wolf = tick(state({ activeAction: fight("wolf") }), {
+		content: CONTENT,
+		now: 1010,
+	});
+	assert.equal(wolf.skills.combat.level, 2);
+	assert.equal(wolf.skills.combat.xp, 5);
+	assert.equal(wolf.skills.hunting.level, 1);
+	assert.equal(wolf.skills.hunting.xp, 10);
+
+	const golem = tick(state({ activeAction: fight("golem") }), {
+		content: CONTENT,
+		now: 1010,
+	});
+	assert.equal(golem.skills.combat.level, 2);
+	assert.equal(golem.skills.hunting.xp, 0);
 });
 
 test("market prices drift after the drift interval", () => {

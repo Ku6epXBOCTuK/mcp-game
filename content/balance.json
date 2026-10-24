@@ -23,6 +23,7 @@
 	"tradingDiscountPerLevel": 0.02,
 	"tradingDiscountMax": 0.4,
 	"tradingXpPerGold": 0.1,
+	"huntingXpShare": 0.5,
 	"marketDriftRange": 0.3,
 	"marketDriftIntervalSec": 300,
 	"marketReversion": 0.5,

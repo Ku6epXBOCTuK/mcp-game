@@ -103,7 +103,7 @@
 		"skillLevel": 1,
 		"sellPrice": 4,
 		"buyPrice": 8,
-		"description": "Свежее молоко."
+		"description": "Свежее молоко. Добывается скиллом «Охота»."
 	},
 	{
 		"id": "meat",
@@ -113,7 +113,7 @@
 		"skillLevel": 1,
 		"sellPrice": 4,
 		"buyPrice": 8,
-		"description": "Свежее мясо."
+		"description": "Свежее мясо. Добывается скиллом «Охота»."
 	},
 	{
 		"id": "roasted_meat",
@@ -131,7 +131,7 @@
 		"skillLevel": 4,
 		"sellPrice": 6,
 		"buyPrice": 12,
-		"description": "Необработанная шкура."
+		"description": "Необработанная шкура. Добывается скиллом «Охота»."
 	},
 	{
 		"id": "hide",
@@ -149,7 +149,7 @@
 		"skillLevel": 1,
 		"sellPrice": 3,
 		"buyPrice": 6,
-		"description": "Топливо для свечей и смазки."
+		"description": "Топливо для свечей и смазки. Добывается скиллом «Охота»."
 	},
 	{
 		"id": "bone",
@@ -159,7 +159,7 @@
 		"skillLevel": 7,
 		"sellPrice": 3,
 		"buyPrice": 6,
-		"description": "Крупная кость."
+		"description": "Крупная кость. Добывается скиллом «Охота»."
 	},
 	{
 		"id": "claw",
@@ -169,7 +169,7 @@
 		"skillLevel": 14,
 		"sellPrice": 5,
 		"buyPrice": 10,
-		"description": "Крепкий коготь хищника."
+		"description": "Крепкий коготь хищника. Добывается скиллом «Охота»."
 	},
 	{
 		"id": "feather",
@@ -179,7 +179,7 @@
 		"skillLevel": 6,
 		"sellPrice": 2,
 		"buyPrice": 4,
-		"description": "Пёрышко для стрел."
+		"description": "Пёрышко для стрел. Добывается скиллом «Охота»."
 	},
 	{
 		"id": "grass_fiber",
