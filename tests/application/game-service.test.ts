@@ -277,6 +277,61 @@ test("a kill lands in the event log and in the digest", async () => {
 	db.close();
 });
 
+test("the early chain reaches make_axe without iron", async () => {
+	const db = openMemoryDatabase();
+	let now = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => now },
+	});
+
+	const wood = await service.gather("p1", "chopping", "wood");
+	assert.equal(wood.isOk(), true);
+	now += 600;
+	const chopped = await service.advanceTime("p1", 600);
+	assert.equal(chopped.isOk(), true);
+
+	await service.cancelAction("p1");
+	const sticks = await service.gather("p1", "chopping", "stick");
+	assert.equal(sticks.isOk(), true);
+	now += 10;
+	await service.advanceTime("p1", 10);
+
+	await service.cancelAction("p1");
+	const stones = await service.gather("p1", "mining", "stone");
+	assert.equal(stones.isOk(), true);
+	now += 10;
+	await service.advanceTime("p1", 10);
+
+	await service.cancelAction("p1");
+	const logs = await service.craft("p1", "chop_log");
+	assert.equal(logs.isOk(), true);
+	now += 120;
+	await service.advanceTime("p1", 120);
+
+	await service.cancelAction("p1");
+	const planks = await service.craft("p1", "make_plank", 3);
+	assert.equal(planks.isOk(), true);
+	now += 60;
+	await service.advanceTime("p1", 60);
+
+	await service.cancelAction("p1");
+	const axe = await service.craft("p1", "make_axe");
+	assert.equal(axe.isOk(), true);
+	now += 60;
+	await service.advanceTime("p1", 60);
+
+	const state = await service.getState("p1");
+	assert.equal(state.isOk(), true);
+	if (state.isOk()) {
+		assert.ok((state.value.state.counters.crafted.make_axe ?? 0) >= 1);
+		assert.ok((state.value.state.inventory.axe ?? 0) >= 1);
+	}
+	db.close();
+});
+
 test("transitionEvents reports deaths and level-ups", async () => {
 	const { service, db } = makeService();
 	const result = await service.getState("p1");

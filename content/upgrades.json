@@ -1,7 +1,7 @@
 [
 	{
 		"id": "axe",
-		"name": "Топор",
+		"name": "Топор лесоруба",
 		"maxLevel": 10,
 		"costBase": 120,
 		"costGrowth": 1.15,
@@ -13,7 +13,7 @@
 	},
 	{
 		"id": "pickaxe",
-		"name": "Кирка",
+		"name": "Кирка шахтёра",
 		"maxLevel": 10,
 		"costBase": 130,
 		"costGrowth": 1.15,
@@ -37,7 +37,7 @@
 	},
 	{
 		"id": "campfire",
-		"name": "Костёр",
+		"name": "Большой костёр",
 		"maxLevel": 6,
 		"costBase": 200,
 		"costGrowth": 1.2,

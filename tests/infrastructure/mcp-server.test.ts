@@ -236,6 +236,23 @@ test("game_log shows recorded events", async () => {
 	db.close();
 });
 
+test("game_quests shows descriptions and rewards", async () => {
+	const { client, db } = await makeHarness();
+	const result = await callTool(client, "game_quests", { command: "list" });
+	assert.equal(result.isError, false);
+	const quests = JSON.parse(result.text) as {
+		id: string;
+		description: string | null;
+		rewards: { kind: string }[];
+	}[];
+	const first = quests.find((quest) => quest.id === "quest_first_wood");
+	assert.ok(first);
+	assert.match(first.description ?? "", /каменный топор/);
+	assert.ok(first.rewards.length > 0);
+	await client.close();
+	db.close();
+});
+
 test("game_state reports a digest since the previous read", async () => {
 	const { client, db } = await makeHarness();
 	const first = await callTool(client, "game_state");

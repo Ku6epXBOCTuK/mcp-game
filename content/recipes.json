@@ -36,11 +36,11 @@
 		"output": { "item": "axe", "qty": 1 },
 		"inputs": [
 			{ "item": "stick", "qty": 3 },
-			{ "item": "iron_ingot", "qty": 2 }
+			{ "item": "stone", "qty": 2 }
 		],
 		"skill": "crafting",
-		"skillLevel": 6,
-		"timeSec": 20
+		"skillLevel": 2,
+		"timeSec": 12
 	},
 	{
 		"id": "make_pickaxe",
@@ -50,7 +50,7 @@
 			{ "item": "iron_ingot", "qty": 3 }
 		],
 		"skill": "crafting",
-		"skillLevel": 6,
+		"skillLevel": 5,
 		"timeSec": 22
 	},
 	{
@@ -138,7 +138,7 @@
 			{ "item": "coal", "qty": 1 }
 		],
 		"skill": "mining",
-		"skillLevel": 12,
+		"skillLevel": 10,
 		"timeSec": 20
 	},
 	{
@@ -193,7 +193,7 @@
 			{ "item": "salt", "qty": 1 }
 		],
 		"skill": "hunting",
-		"skillLevel": 9,
+		"skillLevel": 3,
 		"timeSec": 18
 	},
 	{

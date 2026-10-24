@@ -542,7 +542,8 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 	const gameQuests: McpToolDefinition = {
 		name: "game_quests",
 		title: "Квесты",
-		description: "Прогресс квестов; claim — забрать награду.",
+		description:
+			"Прогресс квестов с описанием и наградами; claim — забрать награду.",
 		scopes: ["read", "play"],
 		inputSchema: z.object({
 			command: z.enum(["list", "claim"]).default("list"),
@@ -568,6 +569,8 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 				result.value.map((entry) => ({
 					id: entry.quest.id,
 					name: entry.quest.name,
+					description: entry.quest.description ?? null,
+					rewards: entry.quest.rewards,
 					status: entry.status,
 					completedSteps: entry.completedSteps,
 					totalSteps: entry.totalSteps,

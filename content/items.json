@@ -70,7 +70,7 @@
 		"name": "Уголь",
 		"type": "resource",
 		"skill": "mining",
-		"skillLevel": 10,
+		"skillLevel": 8,
 		"sellPrice": 5,
 		"buyPrice": 10,
 		"description": "Топливо плавильни."
@@ -357,7 +357,7 @@
 		"type": "tool",
 		"sellPrice": 30,
 		"buyPrice": 60,
-		"description": "Ускоряет рубку."
+		"description": "Ручной топор на палке. Скорость рубки задаёт апгрейд «Топор лесоруба», этот предмет не влияет на добычу."
 	},
 	{
 		"id": "pickaxe",
