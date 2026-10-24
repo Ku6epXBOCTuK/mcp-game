@@ -400,3 +400,54 @@ test("cancel pauses with progress kept and warns when the slots overflow", async
 	await client.close();
 	db.close();
 });
+
+test("game_craft runs a batch of qty units and reports completion", async () => {
+	const db = openMemoryDatabase();
+	const clockNow = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => clockNow },
+	});
+	const factory = createMcpServerFactory({ games: service, dev: true });
+	const client = await connectTestClient(
+		factory({ playerId: "p4", scopes: ["read", "play"] }),
+	);
+
+	await gatherUntil(client, "chopping", "wood", 250, 8);
+	await stopAction(client);
+	await craftUntil(client, "chop_log", 10, 6);
+	await stopAction(client);
+
+	const started = await callJson<{
+		action: { kind: string; remaining: number } | null;
+		maxAffordable: number | null;
+	}>(client, "game_craft", { recipeId: "make_plank", qty: 3 });
+	assert.equal(started.action?.kind, "craft");
+	assert.equal(started.action?.remaining, 3);
+	assert.ok(
+		(started.maxAffordable ?? 0) >= 3,
+		`maxAffordable must cover the batch, got ${started.maxAffordable}`,
+	);
+
+	await advance(client, 60);
+	const after = await readState(client);
+	assert.equal(after.counters.crafted.make_plank, 3);
+	assert.equal(after.activeAction, null);
+
+	const events = await callJson<
+		{ type: string; payload: { recipeId?: string } }[]
+	>(client, "game_log", { limit: 100 });
+	assert.ok(
+		events.some(
+			(event) =>
+				event.type === "action.completed" &&
+				event.payload.recipeId === "make_plank",
+		),
+		"the finished batch must be reported in the event feed",
+	);
+
+	await client.close();
+	db.close();
+});

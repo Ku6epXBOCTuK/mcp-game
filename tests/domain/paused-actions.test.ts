@@ -198,6 +198,53 @@ test("a different action does not resume the shelf entry", () => {
 	assert.equal(other.pausedActions.length, 1);
 });
 
+test("resuming a paused batch craft keeps its remaining budget", () => {
+	const started = start(state({ inventory: { wood: 40 } }), {
+		kind: "craft",
+		recipeId: "make_plank",
+		qty: 5,
+	});
+	const paused = cancel(run(started, 4));
+	assert.equal(
+		paused.pausedActions[0]?.kind === "craft"
+			? paused.pausedActions[0].remaining
+			: -1,
+		5,
+	);
+	const resumed = start(paused, { kind: "craft", recipeId: "make_plank" });
+	assert.equal(resumed.activeAction?.kind, "craft");
+	assert.equal(
+		resumed.activeAction?.kind === "craft"
+			? resumed.activeAction.remaining
+			: -1,
+		5,
+	);
+	assert.equal(
+		resumed.activeAction?.kind === "craft" ? resumed.activeAction.progress : -1,
+		4,
+	);
+});
+
+test("an explicit qty on restart overrides the paused batch budget", () => {
+	const started = start(state({ inventory: { wood: 40 } }), {
+		kind: "craft",
+		recipeId: "make_plank",
+		qty: 5,
+	});
+	const paused = cancel(run(started, 4));
+	const restarted = start(paused, {
+		kind: "craft",
+		recipeId: "make_plank",
+		qty: 2,
+	});
+	assert.equal(
+		restarted.activeAction?.kind === "craft"
+			? restarted.activeAction.remaining
+			: -1,
+		2,
+	);
+});
+
 test("cancelling a fight keeps the monster's hp", () => {
 	const started = start(state(), { kind: "fight", monsterId: "wolf" });
 	const fought = run(started, 5);

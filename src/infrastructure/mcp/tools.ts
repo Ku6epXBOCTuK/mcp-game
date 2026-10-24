@@ -9,6 +9,7 @@ import {
 	MAX_PAUSED_ACTIONS,
 	upgradePrice,
 } from "../../domain/game/actions.ts";
+import { maxCraftsByInputs } from "../../domain/game/tick.ts";
 import {
 	forecastCombat,
 	playerDpsFor,
@@ -137,6 +138,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			targetId: z.string().optional(),
 			recipeId: z.string().optional(),
 			monsterId: z.string().optional(),
+			qty: z.number().int().positive().optional(),
 		}),
 		handler: async (args, context) => {
 			const command = String(args.command ?? "");
@@ -200,6 +202,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 				result = await games.craft(
 					context.playerId,
 					String(args.recipeId ?? ""),
+					args.qty === undefined ? undefined : Number(args.qty),
 				);
 			} else if (kind === "fight") {
 				result = await games.fight(
@@ -220,16 +223,32 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_craft",
 		title: "Крафт",
 		description:
-			"Начать крафт по рецепту: проверяются ресурсы, уровень скилла и рецепт.",
+			"Начать крафт по рецепту: проверяются ресурсы, уровень скилла и рецепт. " +
+			"qty — партия: сделать N единиц и остановиться (или раньше, если кончатся входы). " +
+			"Без qty цикл вечный. Ответ содержит maxAffordable — сколько единиц хватит сырья.",
 		scopes: ["play"],
-		inputSchema: z.object({ recipeId: z.string() }),
+		inputSchema: z.object({
+			recipeId: z.string(),
+			qty: z.number().int().positive().optional(),
+		}),
 		handler: async (args, context) => {
-			const result = await games.craft(
-				context.playerId,
-				String(args.recipeId ?? ""),
-			);
+			const qty = args.qty === undefined ? undefined : Number(args.qty);
+			const recipeId = String(args.recipeId ?? "");
+			const result = await games.craft(context.playerId, recipeId, qty);
 			if (result.isErr()) return errorResultFromDomain(result.error);
-			return jsonResult(result.value.state.activeAction);
+			const { state, content } = result.value;
+			const recipe = content.recipes.find((entry) => entry.id === recipeId);
+			const affordable = recipe ? maxCraftsByInputs(state, recipe.inputs) : 0;
+			const maxAffordable = Number.isFinite(affordable) ? affordable : null;
+			const message =
+				qty !== undefined && maxAffordable !== null && maxAffordable < qty
+					? `Входов хватит только на ${maxAffordable} из ${qty} — партия остановится раньше по сырью.`
+					: undefined;
+			return jsonResult({
+				action: state.activeAction,
+				maxAffordable,
+				...(message ? { message } : {}),
+			});
 		},
 	};
 

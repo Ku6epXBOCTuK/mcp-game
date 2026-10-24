@@ -141,7 +141,7 @@ function applyGather(
 	};
 }
 
-function maxCraftsByInputs(
+export function maxCraftsByInputs(
 	state: GameState,
 	inputs: { item: string; qty: number }[],
 ): number {
@@ -200,7 +200,9 @@ function applyCraft(
 	const rawProduced =
 		Math.floor(after / recipe.timeSec) - Math.floor(before / recipe.timeSec);
 	const affordable = maxCraftsByInputs(state, recipe.inputs);
-	const produced = Math.min(rawProduced, affordable);
+	const loopLimit = action.remaining ?? Number.POSITIVE_INFINITY;
+	const cap = Math.min(affordable, loopLimit);
+	const produced = Math.min(rawProduced, cap);
 	let next = state;
 	if (produced > 0) {
 		next = consumeInputs(next, recipe, produced);
@@ -222,8 +224,9 @@ function applyCraft(
 			},
 		};
 	}
-	// NOTE: inputs bound the loop: time spent after they run out produces
-	// nothing, so it must neither grant xp nor keep the action alive.
+	// NOTE: inputs and the batch budget bound the loop: time spent after
+	// either runs out produces nothing, so it must neither grant xp nor keep
+	// the action alive.
 	const xpElapsed =
 		affordable <= 0
 			? 0
@@ -240,10 +243,14 @@ function applyCraft(
 		balance.xpBase,
 		balance.xpExponent,
 	);
+	const nextAction: CraftAction = {
+		...action,
+		progress: after,
+		...(Number.isFinite(loopLimit) ? { remaining: loopLimit - produced } : {}),
+	};
 	return {
 		...next,
-		activeAction:
-			affordable - produced <= 0 ? null : { ...action, progress: after },
+		activeAction: cap - produced <= 0 ? null : nextAction,
 	};
 }
 

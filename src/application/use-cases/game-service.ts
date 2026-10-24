@@ -61,9 +61,9 @@ function droppedPausedKeys(before: GameState, after: GameState): string[] {
 	return keys.filter((key) => !kept.has(key));
 }
 
-// NOTE: tick ends a craft loop when its inputs run out; the service turns that
-// transition into an event, because the domain layer does not write to the log.
-function exhaustedCraftEvent(
+// NOTE: tick ends a craft loop when its inputs or batch budget run out; the
+// service turns that transition into an event, because the domain has no log.
+function craftEndEvent(
 	before: GameState,
 	after: GameState,
 	content: GameContent,
@@ -77,12 +77,15 @@ function exhaustedCraftEvent(
 	const missing = recipe.inputs.find(
 		(input) => (after.inventory[input.item] ?? 0) < input.qty,
 	);
-	if (!missing) return null;
-	return {
-		ts,
-		type: "action.exhausted",
-		payload: { recipeId: recipe.id, item: missing.item },
-	};
+	if (missing) {
+		return {
+			ts,
+			type: "action.exhausted",
+			payload: { recipeId: recipe.id, item: missing.item },
+		};
+	}
+	if (action.remaining === undefined) return null;
+	return { ts, type: "action.completed", payload: { recipeId: recipe.id } };
 }
 
 export class GameService {
@@ -142,9 +145,9 @@ export class GameService {
 		}
 		const version = stored.version + 1;
 		await this.games.save(playerId, state, version);
-		const exhausted = exhaustedCraftEvent(migrated, state, content, now);
-		if (exhausted) {
-			await this.games.appendEvents(playerId, [exhausted]);
+		const ended = craftEndEvent(migrated, state, content, now);
+		if (ended) {
+			await this.games.appendEvents(playerId, [ended]);
 		}
 		return ok({ state, content, version });
 	}
@@ -255,8 +258,13 @@ export class GameService {
 	async craft(
 		playerId: PlayerId,
 		recipeId: string,
+		qty?: number,
 	): Promise<UseCaseResult<GameContext>> {
-		return this.startAction(playerId, { kind: "craft", recipeId });
+		return this.startAction(playerId, {
+			kind: "craft",
+			recipeId,
+			...(qty !== undefined ? { qty } : {}),
+		});
 	}
 
 	async fight(
@@ -564,7 +572,7 @@ export class GameService {
 			state,
 			version: context.value.version + 1,
 		};
-		const exhausted = exhaustedCraftEvent(
+		const ended = craftEndEvent(
 			context.value.state,
 			ticked,
 			context.value.content,
@@ -573,7 +581,7 @@ export class GameService {
 		const events: GameEvent[] = [
 			{ ts: realNow, type: "time.advanced", payload: { seconds } },
 		];
-		if (exhausted) events.push(exhausted);
+		if (ended) events.push(ended);
 		await this.commit(playerId, next, events);
 		return ok(next);
 	}

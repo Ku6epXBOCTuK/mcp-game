@@ -54,6 +54,8 @@ export type CraftAction = {
 	startedAt: number;
 	endsAt: number;
 	progress: number;
+	// NOTE: absent means the loop runs until inputs run out.
+	remaining?: number;
 };
 
 export type FightAction = {

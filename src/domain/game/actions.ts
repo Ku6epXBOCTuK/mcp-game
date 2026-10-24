@@ -44,7 +44,7 @@ import type { DomainError } from "../shared/errors.ts";
 
 export type StartActionCommand =
 	| { kind: "gather"; skill: SkillId; targetId: string }
-	| { kind: "craft"; recipeId: RecipeId }
+	| { kind: "craft"; recipeId: RecipeId; qty?: number }
 	| { kind: "switch"; zoneId: string }
 	| { kind: "fight"; monsterId: MonsterId };
 
@@ -82,7 +82,15 @@ function resumePaused(
 		};
 	}
 	if (fresh.kind === "craft" && paused.kind === "craft") {
-		return { action: { ...fresh, progress: paused.progress }, pausedActions };
+		const remaining = fresh.remaining ?? paused.remaining;
+		return {
+			action: {
+				...fresh,
+				progress: paused.progress,
+				...(remaining !== undefined ? { remaining } : {}),
+			},
+			pausedActions,
+		};
 	}
 	if (fresh.kind === "gather" && paused.kind === "gather") {
 		return { action: { ...fresh, progress: paused.progress }, pausedActions };
@@ -163,6 +171,10 @@ export function startAction(
 				return notEnoughResources(input.item, input.qty, available);
 			}
 		}
+		const qty =
+			command.qty !== undefined
+				? Math.max(1, Math.floor(command.qty))
+				: undefined;
 		const action: CraftAction = {
 			kind: "craft",
 			skill: recipe.skill,
@@ -170,6 +182,7 @@ export function startAction(
 			startedAt: now,
 			endsAt: now + recipe.timeSec,
 			progress: 0,
+			...(qty !== undefined ? { remaining: qty } : {}),
 		};
 		const resumed = resumePaused(state, action);
 		return ok({

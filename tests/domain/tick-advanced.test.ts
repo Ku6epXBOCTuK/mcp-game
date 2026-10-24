@@ -229,6 +229,47 @@ test("crafting xp covers only the units produced before inputs ran out", () => {
 	assert.ok(Math.abs(ratio - 2 / 6) < 1e-9, `xp ratio ${ratio} != 2/6`);
 });
 
+test("a batch craft stops at the requested count even with inputs left", () => {
+	const before = state({
+		activeAction: {
+			kind: "craft",
+			skill: "crafting",
+			targetId: "make_plank",
+			startedAt: 1000,
+			endsAt: 2000,
+			progress: 0,
+			remaining: 2,
+		},
+		inventory: { wood: 20 },
+	});
+	const after = tick(before, { content: CONTENT, now: 1060 });
+	assert.equal(after.counters.crafted.make_plank, 2);
+	assert.equal(after.activeAction, null);
+	assert.equal(after.inventory.wood, 16);
+});
+
+test("a batch craft counts down its remaining budget", () => {
+	const before = state({
+		activeAction: {
+			kind: "craft",
+			skill: "crafting",
+			targetId: "make_plank",
+			startedAt: 1000,
+			endsAt: 2000,
+			progress: 0,
+			remaining: 3,
+		},
+		inventory: { wood: 20 },
+	});
+	const after = tick(before, { content: CONTENT, now: 1010 });
+	assert.equal(after.counters.crafted.make_plank, 1);
+	assert.ok(after.activeAction?.kind === "craft");
+	assert.equal(
+		after.activeAction?.kind === "craft" ? after.activeAction.remaining : -1,
+		2,
+	);
+});
+
 test("killing a monster fills the killed counter", () => {
 	const before = state({
 		activeAction: {
