@@ -10,6 +10,7 @@ type PlayerRow = {
 	label: string;
 	created_at: number;
 	last_seen_at: number | null;
+	last_read_event_id: number | null;
 	meta: string;
 };
 
@@ -28,6 +29,7 @@ function toPlayer(row: PlayerRow): Player {
 		label: row.label,
 		createdAt: row.created_at,
 		lastSeenAt: row.last_seen_at,
+		lastReadEventId: row.last_read_event_id,
 		meta,
 	};
 }
@@ -78,5 +80,11 @@ export class SqlitePlayerRepository implements PlayerRepository {
 		this.db
 			.prepare("UPDATE players SET last_seen_at = ? WHERE id = ?")
 			.run(at, id);
+	}
+
+	async setLastReadEventId(id: PlayerId, value: number): Promise<void> {
+		this.db
+			.prepare("UPDATE players SET last_read_event_id = ? WHERE id = ?")
+			.run(value, id);
 	}
 }

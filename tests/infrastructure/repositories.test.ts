@@ -17,6 +17,7 @@ test("player repository stores, finds and lists players", async () => {
 	assert.equal(created.id, "p1");
 	assert.equal(created.label, "player-1");
 	assert.equal(created.lastSeenAt, null);
+	assert.equal(created.lastReadEventId, null);
 	assert.deepEqual(created.meta, {});
 
 	const found = await repo.findById("p1");
@@ -25,6 +26,11 @@ test("player repository stores, finds and lists players", async () => {
 
 	await repo.touchLastSeen("p1", 5000);
 	assert.equal((await repo.findById("p1"))?.lastSeenAt, 5000);
+
+	await repo.setLastReadEventId("p1", 7);
+	assert.equal((await repo.findById("p1"))?.lastReadEventId, 7);
+	await repo.setLastReadEventId("p1", 0);
+	assert.equal((await repo.findById("p1"))?.lastReadEventId, 0);
 
 	await repo.create({ id: "p2", label: "player-2", createdAt: 2000 });
 	const all = await repo.list();
@@ -102,6 +108,44 @@ test("events are player scoped and returned newest first", async () => {
 	assert.deepEqual(events[0]?.payload, { upgrade: "axe" });
 	assert.equal((await repo.listEvents("p2", 10)).length, 1);
 	assert.equal((await repo.listEvents("p2", 10))[0]?.type, "sell");
+	db.close();
+});
+
+test("events paginate forward from a cursor id", async () => {
+	const db = openMemoryDatabase();
+	const players = new SqlitePlayerRepository(db);
+	const repo = new SqliteGameRepository(db);
+	await players.create({ id: "p1", label: "one", createdAt: 1 });
+
+	await repo.appendEvents("p1", [
+		{ ts: 100, type: "a", payload: {} },
+		{ ts: 200, type: "b", payload: {} },
+		{ ts: 300, type: "c", payload: {} },
+	]);
+
+	assert.equal(await repo.maxEventId("p1"), 3);
+	assert.equal(await repo.maxEventId("nope"), 0);
+
+	const firstPage = await repo.listEventsSince("p1", 0, 2);
+	assert.equal(firstPage.truncated, true);
+	assert.deepEqual(
+		firstPage.events.map((event) => event.type),
+		["a", "b"],
+	);
+	assert.equal(firstPage.lastId, 2);
+
+	const secondPage = await repo.listEventsSince("p1", firstPage.lastId, 2);
+	assert.equal(secondPage.truncated, false);
+	assert.deepEqual(
+		secondPage.events.map((event) => event.type),
+		["c"],
+	);
+	assert.equal(secondPage.lastId, 3);
+
+	const empty = await repo.listEventsSince("p1", secondPage.lastId, 2);
+	assert.deepEqual(empty.events, []);
+	assert.equal(empty.lastId, secondPage.lastId);
+	assert.equal(empty.truncated, false);
 	db.close();
 });
 

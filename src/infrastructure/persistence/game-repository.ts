@@ -1,4 +1,5 @@
 import type {
+	EventPage,
 	GameRepository,
 	StoredGameState,
 } from "../../application/ports/game-repository.ts";
@@ -17,6 +18,7 @@ type StateRow = {
 };
 
 type EventRow = {
+	id: number;
 	ts: number;
 	type: string;
 	payload: string;
@@ -105,7 +107,7 @@ export class SqliteGameRepository implements GameRepository {
 	async listEvents(playerId: PlayerId, limit: number): Promise<GameEvent[]> {
 		const rows = this.db
 			.prepare(
-				"SELECT ts, type, payload FROM events WHERE player_id = ? ORDER BY ts DESC, id DESC LIMIT ?",
+				"SELECT id, ts, type, payload FROM events WHERE player_id = ? ORDER BY ts DESC, id DESC LIMIT ?",
 			)
 			.all(playerId, limit) as EventRow[];
 		return rows.map((row) => ({
@@ -113,6 +115,38 @@ export class SqliteGameRepository implements GameRepository {
 			type: row.type,
 			payload: JSON.parse(row.payload) as Record<string, unknown>,
 		}));
+	}
+
+	async listEventsSince(
+		playerId: PlayerId,
+		afterId: number,
+		limit: number,
+	): Promise<EventPage> {
+		const rows = this.db
+			.prepare(
+				"SELECT id, ts, type, payload FROM events WHERE player_id = ? AND id > ? ORDER BY id ASC LIMIT ?",
+			)
+			.all(playerId, afterId, limit + 1) as EventRow[];
+		const truncated = rows.length > limit;
+		const page = truncated ? rows.slice(0, limit) : rows;
+		return {
+			events: page.map((row) => ({
+				ts: row.ts,
+				type: row.type,
+				payload: JSON.parse(row.payload) as Record<string, unknown>,
+			})),
+			lastId: page.at(-1)?.id ?? afterId,
+			truncated,
+		};
+	}
+
+	async maxEventId(playerId: PlayerId): Promise<number> {
+		const row = this.db
+			.prepare(
+				"SELECT COALESCE(MAX(id), 0) AS max_id FROM events WHERE player_id = ?",
+			)
+			.get(playerId) as { max_id: number };
+		return row.max_id;
 	}
 
 	async createSnapshot(

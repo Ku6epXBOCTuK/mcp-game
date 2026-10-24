@@ -5,9 +5,13 @@ import { openMemoryDatabase } from "../../src/infrastructure/persistence/databas
 import { SqlitePlayerRepository } from "../../src/infrastructure/persistence/player-repository.ts";
 import { SqliteGameRepository } from "../../src/infrastructure/persistence/game-repository.ts";
 import { FileContentRepository } from "../../src/infrastructure/content/loader.ts";
-import { GameService } from "../../src/application/use-cases/game-service.ts";
+import {
+	GameService,
+	transitionEvents,
+} from "../../src/application/use-cases/game-service.ts";
 import { fixedClock } from "../../src/application/ports/clock.ts";
 import { STATE_VERSION } from "../../src/domain/game/state.ts";
+import type { GameState } from "../../src/domain/game/types.ts";
 
 const CONTENT_DIR = join(import.meta.dirname, "..", "..", "content");
 
@@ -187,5 +191,117 @@ test("events log records successful actions", async () => {
 	await service.gather("p1", "chopping", "wood");
 	const events = await service.listEvents("p1", 10);
 	assert.ok(events.some((event) => event.type === "action.started"));
+	db.close();
+});
+
+test("digest accumulates events between game_state reads only", async () => {
+	const db = openMemoryDatabase();
+	let now = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => now },
+	});
+
+	const first = await service.readStateWithDigest("p1");
+	assert.equal(first.isOk(), true);
+	if (first.isOk()) {
+		assert.deepEqual(first.value.digest.events, []);
+	}
+
+	const gathered = await service.gather("p1", "chopping", "wood");
+	assert.equal(gathered.isOk(), true);
+	const second = await service.readStateWithDigest("p1");
+	assert.equal(second.isOk(), true);
+	if (second.isOk()) {
+		assert.ok(
+			second.value.digest.events.some(
+				(event) => event.type === "action.started",
+			),
+		);
+	}
+
+	const third = await service.readStateWithDigest("p1");
+	assert.equal(third.isOk(), true);
+	if (third.isOk()) {
+		assert.deepEqual(third.value.digest.events, []);
+	}
+
+	now += 60;
+	const advanced = await service.advanceTime("p1", 600);
+	assert.equal(advanced.isOk(), true);
+	await service.getState("p1");
+	const fourth = await service.readStateWithDigest("p1");
+	assert.equal(fourth.isOk(), true);
+	if (fourth.isOk()) {
+		assert.ok(
+			fourth.value.digest.events.some(
+				(event) => event.type === "time.advanced",
+			),
+		);
+	}
+	db.close();
+});
+
+test("a kill lands in the event log and in the digest", async () => {
+	const db = openMemoryDatabase();
+	let now = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => now },
+	});
+
+	const baseline = await service.readStateWithDigest("p1");
+	assert.equal(baseline.isOk(), true);
+	const fought = await service.fight("p1", "rabbit");
+	assert.equal(fought.isOk(), true);
+	now += 600;
+	await service.advanceTime("p1", 600);
+
+	const events = await service.listEvents("p1", 50);
+	const kill = events.find((event) => event.type === "combat.kill");
+	assert.ok(kill);
+	assert.equal(kill?.payload.monsterId, "rabbit");
+	assert.equal(kill?.payload.count, 1);
+
+	const digest = await service.readStateWithDigest("p1");
+	assert.equal(digest.isOk(), true);
+	if (digest.isOk()) {
+		assert.ok(
+			digest.value.digest.events.some((event) => event.type === "combat.kill"),
+		);
+	}
+	db.close();
+});
+
+test("transitionEvents reports deaths and level-ups", async () => {
+	const { service, db } = makeService();
+	const result = await service.getState("p1");
+	assert.equal(result.isOk(), true);
+	if (!result.isOk()) return;
+	const before = result.value.state;
+	const chopping = before.skills.chopping;
+	assert.ok(chopping);
+	const after = {
+		...before,
+		stats: { ...before.stats, deaths: before.stats.deaths + 2 },
+		skills: {
+			...before.skills,
+			chopping: { ...chopping, level: chopping.level + 3 },
+		},
+	} as GameState;
+	const events = transitionEvents(before, after, 5000);
+	assert.deepEqual(events.map((event) => event.type).sort(), [
+		"combat.death",
+		"skill.levelUp",
+	]);
+	const death = events.find((event) => event.type === "combat.death");
+	assert.equal(death?.payload.count, 2);
+	const levelUp = events.find((event) => event.type === "skill.levelUp");
+	assert.equal(levelUp?.payload.skillId, "chopping");
+	assert.equal(levelUp?.payload.level, chopping.level + 3);
 	db.close();
 });

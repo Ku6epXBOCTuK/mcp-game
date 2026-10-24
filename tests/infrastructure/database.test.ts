@@ -34,11 +34,15 @@ test("migration is idempotent", () => {
 	const db = openMemoryDatabase();
 	migrate(db);
 	migrate(db);
-	const rows = db.prepare("SELECT name FROM schema_migrations").all() as {
+	const rows = db
+		.prepare("SELECT name FROM schema_migrations ORDER BY name ASC")
+		.all() as {
 		name: string;
 	}[];
-	assert.equal(rows.length, 1);
-	assert.equal(rows[0]?.name, "001_initial");
+	assert.deepEqual(
+		rows.map((row) => row.name),
+		["001_initial", "002_player_last_read_event"],
+	);
 	db.close();
 });
 

@@ -1,6 +1,9 @@
 import { z } from "zod";
-import type { GameService } from "../../application/use-cases/game-service.ts";
-import type { GameState } from "../../domain/game/types.ts";
+import type {
+	GameService,
+	StateDigest,
+} from "../../application/use-cases/game-service.ts";
+import type { GameEvent, GameState } from "../../domain/game/types.ts";
 import type { SkillId } from "../../domain/game/types.ts";
 import type { GameContent } from "../../domain/content/types.ts";
 import { tradingDiscount, xpToNext } from "../../domain/shared/curves.ts";
@@ -78,7 +81,84 @@ function activeForecast(state: GameState, content: GameContent) {
 	});
 }
 
-function snapshot(state: GameState, content: GameContent, now: number) {
+const DIGEST_LINE_LIMIT = 50;
+
+// NOTE: action.started and action.cancelled echo the agent's own commands back
+// synchronously; the digest reports only what happened without the agent.
+function digestLine(event: GameEvent): string {
+	switch (event.type) {
+		case "action.completed":
+			return `Крафт ${event.payload.recipeId} завершён`;
+		case "action.exhausted":
+			return `Крафт ${event.payload.recipeId} остановлен: кончился вход ${event.payload.item}`;
+		case "action.dropped":
+			return `Отложенное выброшено: ${(event.payload.targets as string[] | undefined)?.join(", ") ?? ""}`;
+		case "action.discarded":
+			return `Отложенное выброшено: ${event.payload.target}`;
+		case "combat.kill": {
+			const count =
+				typeof event.payload.count === "number" ? event.payload.count : 1;
+			return count > 1
+				? `Убито ${event.payload.monsterId} ×${count}`
+				: `Убит ${event.payload.monsterId}`;
+		}
+		case "combat.death": {
+			const count =
+				typeof event.payload.count === "number" ? event.payload.count : 1;
+			return count > 1 ? `Смертей в бою: ${count}` : `Смерть в бою`;
+		}
+		case "skill.levelUp":
+			return `Скилл ${event.payload.skillId} вырос до уровня ${event.payload.level}`;
+		case "world.eventStarted":
+			return `Началось мировое событие ${event.payload.eventId}`;
+		case "time.advanced":
+			return `Пропущено времени: ${event.payload.seconds}с`;
+		case "prestige":
+			return `Престиж: очков ${event.payload.points}, слоёв ${event.payload.layers}`;
+		case "quest.claimed":
+			return `Награда за квест ${event.payload.questId} получена`;
+		case "upgrade.bought":
+			return `Апгрейд ${event.payload.upgradeId} → уровень ${event.payload.level}`;
+		case "item.used":
+			return `Использован предмет ${event.payload.itemId}`;
+		case "item.sold":
+			return `Продано ${event.payload.itemId} ×${event.payload.qty}`;
+		case "item.bought":
+			return `Куплено ${event.payload.itemId} ×${event.payload.qty}`;
+		case "combat.policy":
+			return "Изменена боевая политика";
+		default: {
+			if (event.type.startsWith("bank.")) {
+				return `Банк ${event.type.slice(5)}: ${event.payload.amount} золота`;
+			}
+			if (event.type.startsWith("error.")) {
+				return `Ошибка: ${event.payload.message ?? event.type}`;
+			}
+			return `${event.type} ${JSON.stringify(event.payload)}`;
+		}
+	}
+}
+
+function digestView(digest: StateDigest) {
+	const relevant = digest.events.filter(
+		(event) =>
+			event.type !== "action.started" && event.type !== "action.cancelled",
+	);
+	const lines = relevant.slice(0, DIGEST_LINE_LIMIT).map(digestLine);
+	return {
+		sinceTs: digest.sinceTs,
+		total: relevant.length,
+		lines,
+		omitted: Math.max(0, relevant.length - lines.length),
+	};
+}
+
+function snapshot(
+	state: GameState,
+	content: GameContent,
+	now: number,
+	digest: StateDigest,
+) {
 	return {
 		playerId: state.playerId,
 		now,
@@ -98,6 +178,7 @@ function snapshot(state: GameState, content: GameContent, now: number) {
 		combatBuffs: state.combatBuffs ?? [],
 		combat: activeForecast(state, content),
 		marketUpdatedAt: state.market.updatedAt,
+		digest: digestView(digest),
 	};
 }
 
@@ -108,16 +189,17 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_state",
 		title: "Состояние игры",
 		description:
-			"Полный снимок игрока: кошелёк, инвентарь, скиллы, активное действие, апгрейды, престиж, квесты.",
+			"Полный снимок игрока: кошелёк, инвентарь, скиллы, активное действие, апгрейды, престиж, квесты. Поле digest перечисляет события с прошлого вызова game_state: завершения крафтов, исчерпание входов, убийства, смерти, левелапы, мировые события.",
 		scopes: ["read"],
 		handler: async (_args, context) => {
-			const result = await games.getState(context.playerId);
+			const result = await games.readStateWithDigest(context.playerId);
 			if (result.isErr()) return errorResultFromDomain(result.error);
 			return jsonResult(
 				snapshot(
-					result.value.state,
-					result.value.content,
+					result.value.context.state,
+					result.value.context.content,
 					Math.floor(Date.now() / 1000),
+					result.value.digest,
 				),
 			);
 		},

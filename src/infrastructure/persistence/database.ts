@@ -58,6 +58,12 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       );
     `,
 	},
+	{
+		name: "002_player_last_read_event",
+		sql: `
+      ALTER TABLE players ADD COLUMN last_read_event_id INTEGER;
+    `,
+	},
 ];
 
 export function openDatabase(path: string): SqliteDatabase {

@@ -50,6 +50,14 @@ export type GameContext = {
 
 export type UseCaseResult<T> = Result<T, DomainError>;
 
+export type StateDigest = {
+	sinceTs: number | null;
+	events: GameEvent[];
+	truncated: boolean;
+};
+
+const DIGEST_FETCH_LIMIT = 200;
+
 // NOTE: the pause limit silently evicts the oldest paused action; the service
 // turns that eviction into an event, because the domain layer has no log.
 function droppedPausedKeys(before: GameState, after: GameState): string[] {
@@ -86,6 +94,51 @@ function craftEndEvent(
 	}
 	if (action.remaining === undefined) return null;
 	return { ts, type: "action.completed", payload: { recipeId: recipe.id } };
+}
+
+// NOTE: kills, deaths, level-ups and world events only mutate state in the
+// domain; the service turns those transitions into events, like craftEndEvent.
+export function transitionEvents(
+	before: GameState,
+	after: GameState,
+	ts: number,
+): GameEvent[] {
+	const events: GameEvent[] = [];
+	for (const [monsterId, count] of Object.entries(after.counters.killed)) {
+		const delta = count - (before.counters.killed[monsterId] ?? 0);
+		if (delta > 0) {
+			events.push({
+				ts,
+				type: "combat.kill",
+				payload: { monsterId, count: delta },
+			});
+		}
+	}
+	const deaths = after.stats.deaths - before.stats.deaths;
+	if (deaths > 0) {
+		events.push({ ts, type: "combat.death", payload: { count: deaths } });
+	}
+	for (const skill of Object.values(after.skills)) {
+		const previous = before.skills[skill.id]?.level ?? 0;
+		if (skill.level > previous) {
+			events.push({
+				ts,
+				type: "skill.levelUp",
+				payload: { skillId: skill.id, level: skill.level },
+			});
+		}
+	}
+	const known = new Set(before.activeEvents.map((event) => event.id));
+	for (const event of after.activeEvents) {
+		if (!known.has(event.id)) {
+			events.push({
+				ts,
+				type: "world.eventStarted",
+				payload: { eventId: event.id },
+			});
+		}
+	}
+	return events;
 }
 
 export class GameService {
@@ -146,8 +199,12 @@ export class GameService {
 		const version = stored.version + 1;
 		await this.games.save(playerId, state, version);
 		const ended = craftEndEvent(migrated, state, content, now);
-		if (ended) {
-			await this.games.appendEvents(playerId, [ended]);
+		const events = [
+			...(ended ? [ended] : []),
+			...transitionEvents(migrated, state, now),
+		];
+		if (events.length > 0) {
+			await this.games.appendEvents(playerId, events);
 		}
 		return ok({ state, content, version });
 	}
@@ -167,6 +224,42 @@ export class GameService {
 
 	async getState(playerId: PlayerId): Promise<UseCaseResult<GameContext>> {
 		return this.loadContext(playerId);
+	}
+
+	// NOTE: only this method moves the read cursor, so only game_state reports
+	// a digest; every other tool keeps the "since last game_state" window open.
+	// A null cursor means "never read": the first read sets the baseline.
+	async readStateWithDigest(
+		playerId: PlayerId,
+	): Promise<UseCaseResult<{ context: GameContext; digest: StateDigest }>> {
+		const context = await this.getState(playerId);
+		if (context.isErr()) return err(context.error);
+		const player = await this.players.findById(playerId);
+		const cursor = player?.lastReadEventId ?? null;
+		if (cursor === null) {
+			const maxId = await this.games.maxEventId(playerId);
+			await this.players.setLastReadEventId(playerId, maxId);
+			return ok({
+				context: context.value,
+				digest: { sinceTs: null, events: [], truncated: false },
+			});
+		}
+		const page = await this.games.listEventsSince(
+			playerId,
+			cursor,
+			DIGEST_FETCH_LIMIT,
+		);
+		if (page.lastId > cursor) {
+			await this.players.setLastReadEventId(playerId, page.lastId);
+		}
+		return ok({
+			context: context.value,
+			digest: {
+				sinceTs: page.events[0]?.ts ?? null,
+				events: page.events,
+				truncated: page.truncated,
+			},
+		});
 	}
 
 	async startAction(
@@ -580,8 +673,9 @@ export class GameService {
 		);
 		const events: GameEvent[] = [
 			{ ts: realNow, type: "time.advanced", payload: { seconds } },
+			...(ended ? [ended] : []),
+			...transitionEvents(context.value.state, ticked, realNow),
 		];
-		if (ended) events.push(ended);
 		await this.commit(playerId, next, events);
 		return ok(next);
 	}

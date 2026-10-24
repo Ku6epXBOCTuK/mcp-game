@@ -236,6 +236,48 @@ test("game_log shows recorded events", async () => {
 	db.close();
 });
 
+test("game_state reports a digest since the previous read", async () => {
+	const { client, db } = await makeHarness();
+	const first = await callTool(client, "game_state");
+	assert.equal(first.isError, false);
+	const firstPayload = JSON.parse(first.text) as {
+		digest: { total: number; lines: string[] };
+	};
+	assert.equal(firstPayload.digest.total, 0);
+	assert.deepEqual(firstPayload.digest.lines, []);
+
+	await callTool(client, "game_action", {
+		command: "start",
+		kind: "gather",
+		skill: "chopping",
+		targetId: "wood",
+	});
+	const second = await callTool(client, "game_state");
+	const secondPayload = JSON.parse(second.text) as {
+		digest: { total: number; lines: string[] };
+	};
+	assert.equal(secondPayload.digest.total, 0);
+
+	await callTool(client, "game_tick", { seconds: 600 });
+	const third = await callTool(client, "game_state");
+	const thirdPayload = JSON.parse(third.text) as {
+		digest: { sinceTs: number | null; total: number; lines: string[] };
+	};
+	assert.ok(thirdPayload.digest.total >= 1);
+	assert.ok(thirdPayload.digest.sinceTs !== null);
+	assert.ok(
+		thirdPayload.digest.lines.some((line) => /Пропущено времени/.test(line)),
+	);
+
+	const fourth = await callTool(client, "game_state");
+	const fourthPayload = JSON.parse(fourth.text) as {
+		digest: { total: number };
+	};
+	assert.equal(fourthPayload.digest.total, 0);
+	await client.close();
+	db.close();
+});
+
 test("resources expose state, skills, market and quests", async () => {
 	const { client, db } = await makeHarness();
 	const resources = (await client.request("resources/list")) as {

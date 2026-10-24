@@ -5,6 +5,7 @@ export type Player = {
 	label: string;
 	createdAt: number;
 	lastSeenAt: number | null;
+	lastReadEventId: number | null;
 	meta: Record<string, unknown>;
 };
 
@@ -18,4 +19,5 @@ export interface PlayerRepository {
 	findById(id: PlayerId): Promise<Player | null>;
 	list(): Promise<Player[]>;
 	touchLastSeen(id: PlayerId, at: number): Promise<void>;
+	setLastReadEventId(id: PlayerId, value: number): Promise<void>;
 }
