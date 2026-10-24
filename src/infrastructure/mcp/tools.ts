@@ -39,6 +39,23 @@ function optionalPercent(value: unknown): number | null | undefined {
 	return Number(value);
 }
 
+// NOTE: passive income and interest leave sub-coin dust in the state; every
+// answer rounds the money down, so agents only ever see whole coins.
+function wholeCoins(gold: number): number {
+	return Math.floor(gold);
+}
+
+function moneyView(state: GameState) {
+	return {
+		wallet: { ...state.wallet, gold: wholeCoins(state.wallet.gold) },
+		bank: {
+			...state.bank,
+			deposits: wholeCoins(state.bank.deposits),
+			credit: wholeCoins(state.bank.credit),
+		},
+	};
+}
+
 function activeForecast(state: GameState, content: GameContent) {
 	const action = state.activeAction;
 	if (!action || action.kind !== "fight") return null;
@@ -60,8 +77,7 @@ function snapshot(state: GameState, content: GameContent, now: number) {
 	return {
 		playerId: state.playerId,
 		now,
-		wallet: state.wallet,
-		bank: state.bank,
+		...moneyView(state),
 		health: state.health,
 		inventory: state.inventory,
 		skills: state.skills,
@@ -210,7 +226,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 				return jsonResult({
 					upgradeId,
 					level: result.value.state.upgrades[upgradeId] ?? 0,
-					gold: result.value.state.wallet.gold,
+					gold: wholeCoins(result.value.state.wallet.gold),
 				});
 			}
 			const contextResult = await games.getState(context.playerId);
@@ -258,7 +274,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			return jsonResult({
 				itemId,
 				qty,
-				gold: result.value.state.wallet.gold,
+				gold: wholeCoins(result.value.state.wallet.gold),
 				inventory: result.value.state.inventory,
 			});
 		},
@@ -311,10 +327,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 				amount,
 			});
 			if (result.isErr()) return errorResultFromDomain(result.error);
-			return jsonResult({
-				wallet: result.value.state.wallet,
-				bank: result.value.state.bank,
-			});
+			return jsonResult(moneyView(result.value.state));
 		},
 	};
 
@@ -569,7 +582,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			const result = await games.advanceTime(context.playerId, seconds);
 			if (result.isErr()) return errorResultFromDomain(result.error);
 			return textResult(
-				`Время продвинуто на ${seconds} с. Золото: ${result.value.state.wallet.gold}. Инвентарь: ${JSON.stringify(result.value.state.inventory)}.`,
+				`Время продвинуто на ${seconds} с. Золото: ${wholeCoins(result.value.state.wallet.gold)}. Инвентарь: ${JSON.stringify(result.value.state.inventory)}.`,
 			);
 		},
 	};

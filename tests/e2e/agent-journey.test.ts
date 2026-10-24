@@ -231,7 +231,7 @@ test("agent completes the full loop through MCP tools", async () => {
 	const preview = await callJson<{ points: number }>(client, "game_prestige", {
 		command: "preview",
 	});
-	assert.ok(preview.points > 0, "престиж должен быть доступен");
+	assert.ok(preview.points > 0, "prestige must be available");
 
 	await callTool(client, "game_prestige", { command: "start" });
 	const afterPrestige = await readState(client);
@@ -253,6 +253,67 @@ test("agent completes the full loop through MCP tools", async () => {
 		"game_skills",
 	);
 	assert.ok(skills.skills.length > 0);
+
+	await client.close();
+	db.close();
+});
+
+test("money answers always show whole coins", async () => {
+	const db = openMemoryDatabase();
+	const clockNow = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => clockNow },
+	});
+	const factory = createMcpServerFactory({ games: service, dev: true });
+	const client = await connectTestClient(
+		factory({ playerId: "p2", scopes: ["read", "play"] }),
+	);
+
+	// NOTE: the bank upgrade drips 0.1 gold per second, so short ticks leave
+	// sub-coin dust in the state that must never surface in an answer.
+	await gatherUntil(client, "chopping", "wood", 620, 8);
+	await sellAll(client, "wood");
+	await callTool(client, "game_upgrades", {
+		command: "buy",
+		upgradeId: "bank",
+	});
+	const withBank = await readState(client);
+	assert.equal(withBank.upgrades.bank, 1);
+	const base = withBank.wallet.gold;
+
+	await advance(client, 7);
+	const dusty = await readState(client);
+	assert.ok(
+		Number.isInteger(dusty.wallet.gold),
+		`gold must be whole, got ${dusty.wallet.gold}`,
+	);
+	assert.ok(dusty.wallet.gold >= base, "passive income must still accrue");
+
+	await advance(client, 30);
+	const later = await readState(client);
+	assert.ok(
+		Number.isInteger(later.wallet.gold),
+		`gold must be whole, got ${later.wallet.gold}`,
+	);
+	assert.ok(later.wallet.gold > base, "income must keep accruing");
+
+	const bankView = await callJson<{
+		wallet: { gold: number };
+		bank: { deposits: number; credit: number };
+	}>(client, "game_bank", { command: "deposit", amount: 10 });
+	assert.ok(Number.isInteger(bankView.wallet.gold));
+	assert.ok(Number.isInteger(bankView.bank.deposits));
+	assert.ok(Number.isInteger(bankView.bank.credit));
+
+	const trade = await callJson<{ gold: number }>(client, "game_trade", {
+		command: "sell",
+		itemId: "wood",
+		qty: 1,
+	});
+	assert.ok(Number.isInteger(trade.gold));
 
 	await client.close();
 	db.close();
