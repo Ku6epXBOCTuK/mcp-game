@@ -1,6 +1,10 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { tick } from "../../src/domain/game/tick.ts";
+import {
+	gatherRatePerMinute,
+	passiveGoldPerMinute,
+} from "../../src/domain/game/rates.ts";
 import { totalXpToReach } from "../../src/domain/shared/curves.ts";
 import { createInitialState } from "../../src/domain/game/state.ts";
 import type { GameContent } from "../../src/domain/content/types.ts";
@@ -131,6 +135,22 @@ test("gather rate grows with upgrade levels", () => {
 	const before = state({ activeAction: gatherAction(), upgrades: { axe: 5 } });
 	const after = tick(before, { content: CONTENT, now: 1600 });
 	assert.equal(after.inventory.wood, 16);
+});
+
+test("gathered amount matches gatherRatePerMinute", () => {
+	const before = state({ activeAction: gatherAction(), upgrades: { axe: 5 } });
+	const after = tick(before, { content: CONTENT, now: 1600 });
+	const produced = (after.inventory.wood ?? 0) - (before.inventory.wood ?? 0);
+	const rate = gatherRatePerMinute(before, CONTENT, "chopping");
+	assert.equal(produced, Math.floor((rate * 600) / 60));
+});
+
+test("credited passive gold matches passiveGoldPerMinute", () => {
+	const before = state({ upgrades: { bank: 2 } });
+	const after = tick(before, { content: CONTENT, now: 1100 });
+	const credited = (after.wallet.gold ?? 0) - (before.wallet.gold ?? 0);
+	const expected = (passiveGoldPerMinute(before, CONTENT) / 60) * 100;
+	assert.ok(Math.abs(credited - expected) < 1e-9);
 });
 
 test("crafting produces the recipe output over time", () => {

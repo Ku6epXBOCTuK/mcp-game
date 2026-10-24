@@ -1,4 +1,4 @@
-import { productionRate } from "../shared/curves.ts";
+import { prestigeMultiplier } from "../shared/curves.ts";
 import { nextRandom } from "../shared/rng.ts";
 import { refreshMarket } from "./market.ts";
 import { accrueInterest, applyGoldIncome } from "./bank.ts";
@@ -7,6 +7,12 @@ import {
 	upgradeMultiplier,
 	type Multipliers,
 } from "./multipliers.ts";
+import {
+	craftSpeed,
+	gatherRatePerMinute,
+	maxCraftsByInputs,
+	passiveGoldPerSec,
+} from "./rates.ts";
 import { gainXp } from "./skills.ts";
 import {
 	consumePotions,
@@ -35,17 +41,6 @@ const DEFAULT_HUNTING_XP_SHARE = 0.5;
 function skillLevelOf(state: GameState, skill: SkillId, bonus: number): number {
 	const current = state.skills[skill];
 	return (current?.level ?? 1) + bonus;
-}
-
-function passiveIncomePerSec(state: GameState, content: GameContent): number {
-	let income = 0;
-	for (const upgrade of content.upgrades) {
-		if (upgrade.effect.kind !== "passiveIncome") continue;
-		const level = state.upgrades[upgrade.id] ?? 0;
-		if (level <= 0) continue;
-		income += upgrade.effect.valuePerLevel * level;
-	}
-	return income;
 }
 
 function addItem(state: GameState, itemId: string, qty: number): GameState {
@@ -93,20 +88,7 @@ function applyGather(
 ): GameState {
 	const balance = content.balance;
 	const skill = action.skill;
-	const level = skillLevelOf(state, skill, multipliers.skillBonus[skill] ?? 0);
-	const rateBase = balance.rateBase[skill] ?? 0;
-	const rate = productionRate({
-		rateBase,
-		skillLevel: level,
-		upgradeMult:
-			upgradeMultiplier(state, content, "productionMultiplier", skill) *
-			multipliers.production,
-		prestigeMult: Math.pow(
-			state.prestige.points + 1,
-			balance.prestigeProductionExponent,
-		),
-		k: balance.skillRateK,
-	});
+	const rate = gatherRatePerMinute(state, content, skill, multipliers);
 	const before = action.progress;
 	const after = before + (rate * elapsed) / 60;
 	const produced = Math.floor(after) - Math.floor(before);
@@ -141,19 +123,6 @@ function applyGather(
 	};
 }
 
-export function maxCraftsByInputs(
-	state: GameState,
-	inputs: { item: string; qty: number }[],
-): number {
-	if (inputs.length === 0) return Number.POSITIVE_INFINITY;
-	let limit = Number.POSITIVE_INFINITY;
-	for (const input of inputs) {
-		const available = state.inventory[input.item] ?? 0;
-		limit = Math.min(limit, Math.floor(available / input.qty));
-	}
-	return Number.isFinite(limit) ? limit : 0;
-}
-
 function consumeInputs(
 	state: GameState,
 	recipe: GameContent["recipes"][number],
@@ -178,23 +147,7 @@ function applyCraft(
 	const balance = content.balance;
 	const recipe = content.recipes.find((entry) => entry.id === action.targetId);
 	if (!recipe) return { ...state, activeAction: null };
-	const level = skillLevelOf(
-		state,
-		recipe.skill,
-		multipliers.skillBonus[recipe.skill] ?? 0,
-	);
-	const speed = productionRate({
-		rateBase: 1,
-		skillLevel: level,
-		upgradeMult:
-			upgradeMultiplier(state, content, "productionMultiplier", recipe.skill) *
-			multipliers.production,
-		prestigeMult: Math.pow(
-			state.prestige.points + 1,
-			balance.prestigeProductionExponent,
-		),
-		k: balance.skillRateK,
-	});
+	const speed = craftSpeed(state, content, recipe.skill, multipliers);
 	const before = action.progress;
 	const after = before + elapsed * speed;
 	const rawProduced =
@@ -464,10 +417,10 @@ export function tick(state: GameState, options: TickOptions): GameState {
 	next = accrueInterest(next, content, elapsed);
 	next = regenerateHealth(next, content, idleSec);
 
-	const income = passiveIncomePerSec(next, content);
+	const income = passiveGoldPerSec(next, content);
 	if (income > 0) {
-		const prestigeGold = Math.pow(
-			next.prestige.points + 1,
+		const prestigeGold = prestigeMultiplier(
+			next.prestige.points,
 			balance.prestigeGoldExponent,
 		);
 		const gold = income * elapsed * multipliers.gold * prestigeGold;

@@ -12,7 +12,13 @@ import {
 	MAX_PAUSED_ACTIONS,
 	upgradePrice,
 } from "../../domain/game/actions.ts";
-import { maxCraftsByInputs } from "../../domain/game/tick.ts";
+import { maxCraftsByInputs } from "../../domain/game/rates.ts";
+import {
+	activeActionEta,
+	gatherRatePerMinute,
+	gatherSkills,
+	passiveGoldPerMinute,
+} from "../../domain/game/rates.ts";
 import {
 	forecastCombat,
 	playerDpsFor,
@@ -153,6 +159,27 @@ function digestView(digest: StateDigest) {
 	};
 }
 
+function round2(value: number): number {
+	return Math.round(value * 100) / 100;
+}
+
+function ratesView(state: GameState, content: GameContent) {
+	const perMinute: Record<string, number> = {};
+	for (const skill of gatherSkills(content)) {
+		perMinute[skill] = round2(gatherRatePerMinute(state, content, skill));
+	}
+	return {
+		perMinute,
+		passiveGoldPerMinute: round2(passiveGoldPerMinute(state, content)),
+	};
+}
+
+function etaView(state: GameState, content: GameContent) {
+	const eta = activeActionEta(state, content);
+	if (!eta) return null;
+	return { ...eta, seconds: round2(eta.seconds) };
+}
+
 function snapshot(
 	state: GameState,
 	content: GameContent,
@@ -167,6 +194,7 @@ function snapshot(
 		inventory: state.inventory,
 		skills: state.skills,
 		activeAction: state.activeAction,
+		activeActionEta: etaView(state, content),
 		pausedActions: state.pausedActions ?? [],
 		activeEvents: state.activeEvents,
 		upgrades: state.upgrades,
@@ -177,6 +205,7 @@ function snapshot(
 		combatPolicy: state.combatPolicy,
 		combatBuffs: state.combatBuffs ?? [],
 		combat: activeForecast(state, content),
+		rates: ratesView(state, content),
 		marketUpdatedAt: state.market.updatedAt,
 		digest: digestView(digest),
 	};
@@ -189,7 +218,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_state",
 		title: "Состояние игры",
 		description:
-			"Полный снимок игрока: кошелёк, инвентарь, скиллы, активное действие, апгрейды, престиж, квесты. Поле digest перечисляет события с прошлого вызова game_state: завершения крафтов, исчерпание входов, убийства, смерти, левелапы, мировые события.",
+			"Полный снимок игрока: кошелёк, инвентарь, скиллы, активное действие, апгрейды, престиж, квесты. rates.perMinute — добыча в минуту по скиллам с учётом апгрейдов, событий и престижа; rates.passiveGoldPerMinute — пассивный доход золота; activeActionEta — ETA активного действия (для gather — до следующей единицы, для конечного крафта — до конца батча, unitsLeft — сколько единиц останется крафтиться; null у unitsLeft — бесконечный цикл, seconds тогда до следующей единицы). Поле digest перечисляет события с прошлого вызова game_state: завершения крафтов, исчерпание входов, убийства, смерти, левелапы, мировые события.",
 		scopes: ["read"],
 		handler: async (_args, context) => {
 			const result = await games.readStateWithDigest(context.playerId);
@@ -632,8 +661,7 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 						requiredLevel: item.skillLevel ?? 1,
 						available: skillLevel >= (item.skillLevel ?? 1),
 						ratePerMinute: Math.round(
-							(content.balance.rateBase[item.skill ?? ""] ?? 0) *
-								(1 + content.balance.skillRateK * skillLevel),
+							item.skill ? gatherRatePerMinute(state, content, item.skill) : 0,
 						),
 					};
 				});

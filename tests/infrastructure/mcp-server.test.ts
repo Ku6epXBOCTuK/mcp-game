@@ -92,6 +92,53 @@ test("game_state returns the player snapshot", async () => {
 	db.close();
 });
 
+test("game_state exposes rates and active action eta", async () => {
+	const { client, db } = await makeHarness();
+	const idle = await callTool(client, "game_state");
+	const idlePayload = JSON.parse(idle.text) as {
+		rates: { perMinute: Record<string, number>; passiveGoldPerMinute: number };
+		activeActionEta: unknown;
+	};
+	assert.ok((idlePayload.rates.perMinute.chopping ?? 0) > 0);
+	assert.equal(idlePayload.rates.passiveGoldPerMinute, 0);
+	assert.equal(idlePayload.activeActionEta, null);
+
+	await callTool(client, "game_action", {
+		command: "start",
+		kind: "gather",
+		skill: "chopping",
+		targetId: "wood",
+	});
+	const running = await callTool(client, "game_state");
+	const payload = JSON.parse(running.text) as {
+		rates: { perMinute: Record<string, number> };
+		activeActionEta: {
+			kind: string;
+			seconds: number;
+			unitsLeft: number | null;
+		} | null;
+	};
+	assert.equal(payload.activeActionEta?.kind, "gather");
+	assert.ok((payload.activeActionEta?.seconds ?? 0) > 0);
+	assert.equal(payload.activeActionEta?.unitsLeft, null);
+
+	const skills = await callTool(client, "game_skills", { skill: "chopping" });
+	const list = JSON.parse(skills.text) as {
+		resources: { id: string; ratePerMinute: number }[];
+	};
+	assert.ok(list.resources.length > 0);
+	for (const resource of list.resources) {
+		assert.ok(
+			Math.abs(
+				resource.ratePerMinute - (payload.rates.perMinute.chopping ?? 0),
+			) <= 0.5,
+			`ratePerMinute ${resource.ratePerMinute} diverges from rates.perMinute ${payload.rates.perMinute.chopping}`,
+		);
+	}
+	await client.close();
+	db.close();
+});
+
 test("game_action starts a gather action and reports it", async () => {
 	const { client, db } = await makeHarness();
 	const started = await callTool(client, "game_action", {
