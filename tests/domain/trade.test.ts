@@ -96,6 +96,6 @@ test("enough sales raise the trading level", async () => {
 	assert.equal(result.isOk(), true);
 	if (result.isErr()) return;
 	state = result.value;
-	assert.ok(state.skills.trading.level > 1, "уровень trading не вырос");
+	assert.ok(state.skills.trading.level > 1, "trading level did not grow");
 	assert.ok(state.skills.trading.xp >= 0);
 });

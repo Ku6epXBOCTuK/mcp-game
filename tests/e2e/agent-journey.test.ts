@@ -106,7 +106,7 @@ async function gatherUntil(
 	const state = await readState(client);
 	assert.ok(
 		(state.inventory[targetId] ?? 0) >= qty,
-		`не набралось ${targetId}: ${state.inventory[targetId] ?? 0}`,
+		`not enough ${targetId}: ${state.inventory[targetId] ?? 0}`,
 	);
 }
 
@@ -125,7 +125,7 @@ async function craftUntil(
 	const state = await readState(client);
 	assert.ok(
 		(state.counters.crafted[recipeId] ?? 0) >= qty,
-		`не скрафтилось ${recipeId}: ${state.counters.crafted[recipeId] ?? 0}`,
+		`not crafted ${recipeId}: ${state.counters.crafted[recipeId] ?? 0}`,
 	);
 }
 
@@ -314,6 +314,88 @@ test("money answers always show whole coins", async () => {
 		qty: 1,
 	});
 	assert.ok(Number.isInteger(trade.gold));
+
+	await client.close();
+	db.close();
+});
+
+type PausedAction = {
+	kind: string;
+	targetId: string;
+	progress: number;
+};
+
+test("cancel pauses with progress kept and warns when the slots overflow", async () => {
+	const db = openMemoryDatabase();
+	const clockNow = 1_000_000;
+	const service = new GameService({
+		games: new SqliteGameRepository(db),
+		players: new SqlitePlayerRepository(db),
+		content: new FileContentRepository(CONTENT_DIR),
+		clock: { now: () => clockNow },
+	});
+	const factory = createMcpServerFactory({ games: service, dev: true });
+	const client = await connectTestClient(
+		factory({ playerId: "p3", scopes: ["read", "play"] }),
+	);
+
+	await gatherUntil(client, "chopping", "wood", 20, 4);
+	const first = await callJson<{
+		message: string;
+		pausedActions: PausedAction[];
+		pausedLimit: number;
+		dropped: string[];
+	}>(client, "game_action", { command: "cancel" });
+	assert.equal(first.pausedActions.length, 1);
+	assert.ok(
+		first.pausedActions[0] && first.pausedActions[0].progress > 0,
+		"the paused slot must keep its progress",
+	);
+	assert.equal(first.dropped.length, 0);
+	assert.match(first.message, /game_action start/);
+
+	const status = await callJson<{
+		activeAction: PausedAction | null;
+		pausedActions: PausedAction[];
+		pausedLimit: number;
+	}>(client, "game_action", { command: "status" });
+	assert.equal(status.activeAction, null);
+	assert.ok(status.pausedActions.some((action) => action.targetId === "wood"));
+	assert.equal(status.pausedLimit, 3);
+
+	await startGather(client, "mining", "stone");
+	await advance(client, 60);
+	await callTool(client, "game_action", { command: "cancel" });
+	await startGather(client, "chopping", "stick");
+	await callTool(client, "game_action", { command: "cancel" });
+	await startGather(client, "magic", "berry");
+	const fourth = await callJson<{
+		dropped: string[];
+		pausedActions: PausedAction[];
+	}>(client, "game_action", { command: "cancel" });
+	assert.equal(fourth.pausedActions.length, 3);
+	assert.deepEqual(fourth.dropped, ["gather:wood"]);
+
+	const events = await callJson<
+		{ type: string; payload: { targets: string[] } }[]
+	>(client, "game_log", { limit: 100 });
+	assert.ok(
+		events.some(
+			(event) =>
+				event.type === "action.dropped" &&
+				event.payload.targets.includes("gather:wood"),
+		),
+		"the eviction must be reported in the event feed",
+	);
+
+	const resumed = await callJson<PausedAction>(client, "game_action", {
+		command: "start",
+		kind: "gather",
+		skill: "mining",
+		targetId: "stone",
+	});
+	assert.equal(resumed.kind, "gather");
+	assert.ok(resumed.progress > 0, "progress must resume, not reset");
 
 	await client.close();
 	db.close();

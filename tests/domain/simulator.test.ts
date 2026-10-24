@@ -112,7 +112,7 @@ test("the simulator follows the quest chain instead of only fighting", async () 
 	const claimed = Object.values(state.quests).filter(
 		(quest) => quest.status === "claimed",
 	).length;
-	assert.ok(claimed >= 3, `квестов закрыто: ${claimed}`);
+	assert.ok(claimed >= 3, `quests claimed: ${claimed}`);
 	assert.ok(metrics.idleRatio <= 0.6);
 });
 

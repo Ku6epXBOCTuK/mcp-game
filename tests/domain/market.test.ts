@@ -102,7 +102,7 @@ test("the market catches up with a long offline gap", async () => {
 				price - (content.items.find((i) => i.id === id)?.sellPrice ?? 0),
 			) > 0.01,
 	);
-	assert.ok(moved.length > 0, "шаги дрейфа не применились");
+	assert.ok(moved.length > 0, "market drift steps did not apply");
 });
 
 test("the market does not depend on the poll interval", async () => {

@@ -84,7 +84,7 @@ export function alreadyActing(
 ): Result<never, DomainError> {
 	return err({
 		code: "AlreadyActing",
-		message: `Уже выполняется действие "${currentAction}". Сначала отмените или дождитесь завершения.`,
+		message: `Уже выполняется действие "${currentAction}". Отмените его — прогресс сохранится в отложенных, — либо дождитесь завершения.`,
 		currentAction,
 	});
 }

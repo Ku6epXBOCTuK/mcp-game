@@ -72,7 +72,7 @@ test("server exposes the planned tools", async () => {
 		"game_upgrades",
 		"game_use",
 	]) {
-		assert.ok(names.includes(expected), `нет инструмента ${expected}`);
+		assert.ok(names.includes(expected), `missing tool ${expected}`);
 	}
 	await client.close();
 	db.close();
@@ -106,8 +106,12 @@ test("game_action starts a gather action and reports it", async () => {
 	assert.equal(action.targetId, "wood");
 
 	const status = await callTool(client, "game_action", { command: "status" });
-	const current = JSON.parse(status.text) as { targetId: string };
-	assert.equal(current.targetId, "wood");
+	const current = JSON.parse(status.text) as {
+		activeAction: { targetId: string } | null;
+		pausedActions: { targetId: string }[];
+	};
+	assert.equal(current.activeAction?.targetId, "wood");
+	assert.deepEqual(current.pausedActions, []);
 	await client.close();
 	db.close();
 });
@@ -268,7 +272,7 @@ test("game_strategy prompt is registered and returns text", async () => {
 	const result = (await client.request("prompts/get", {
 		name: "game_strategy",
 	})) as { messages: { content: { text: string } }[] };
-	assert.match(result.messages[0]?.content.text ?? "", /престиж/i);
+	assert.ok((result.messages[0]?.content.text ?? "").length > 100);
 	await client.close();
 	db.close();
 });

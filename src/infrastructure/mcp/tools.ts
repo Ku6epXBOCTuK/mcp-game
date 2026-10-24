@@ -4,7 +4,11 @@ import type { GameState } from "../../domain/game/types.ts";
 import type { SkillId } from "../../domain/game/types.ts";
 import type { GameContent } from "../../domain/content/types.ts";
 import { tradingDiscount, xpToNext } from "../../domain/shared/curves.ts";
-import { upgradePrice } from "../../domain/game/actions.ts";
+import {
+	describeAction,
+	MAX_PAUSED_ACTIONS,
+	upgradePrice,
+} from "../../domain/game/actions.ts";
 import {
 	forecastCombat,
 	playerDpsFor,
@@ -122,7 +126,9 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 		name: "game_action",
 		title: "Действие",
 		description:
-			"Управление активным действием: start (собрать/сварить/атаковать), cancel (отложить, прогресс сохраняется), discard (выбросить отложенное), status.",
+			"Управление активным действием: start (собрать/сварить/атаковать), cancel (отложить — прогресс сохраняется, но отложенное не производит), discard (выбросить отложенное), status. " +
+			`Отложенных держится максимум ${MAX_PAUSED_ACTIONS}: при переполнении самое старое выбрасывается вместе с прогрессом. ` +
+			"Повторный start того же действия продолжает его с сохранённого прогресса.",
 		scopes: ["play"],
 		inputSchema: z.object({
 			command: z.enum(["start", "cancel", "discard", "status"]),
@@ -137,14 +143,36 @@ export function createToolDefinitions(deps: Deps): McpToolDefinition[] {
 			if (command === "status") {
 				const result = await games.getState(context.playerId);
 				if (result.isErr()) return errorResultFromDomain(result.error);
-				return jsonResult(result.value.state.activeAction);
+				return jsonResult({
+					activeAction: result.value.state.activeAction,
+					pausedActions: result.value.state.pausedActions ?? [],
+					pausedLimit: MAX_PAUSED_ACTIONS,
+				});
 			}
 			if (command === "cancel") {
 				const result = await games.cancelAction(context.playerId);
 				if (result.isErr()) return errorResultFromDomain(result.error);
+				const state = result.value.state;
+				const paused = state.pausedActions ?? [];
+				const dropped = result.value.droppedPaused ?? [];
+				const cancelled = paused[paused.length - 1];
+				const message = [
+					cancelled
+						? `Действие "${describeAction(cancelled)}" отложено: прогресс сохранён, но пока оно отложено — оно не производит. Возобновить — game_action start с тем же kind и targetId.`
+						: "",
+					`Слоты отложенных: ${paused.length}/${MAX_PAUSED_ACTIONS}.`,
+					dropped.length > 0
+						? `Внимание: слоты были переполнены, самое старое отложенное выброшено вместе с прогрессом: ${dropped.join(", ")}.`
+						: "",
+				]
+					.filter(Boolean)
+					.join(" ");
 				return jsonResult({
-					activeAction: result.value.state.activeAction,
-					pausedActions: result.value.state.pausedActions ?? [],
+					message,
+					activeAction: state.activeAction,
+					pausedActions: paused,
+					pausedLimit: MAX_PAUSED_ACTIONS,
+					dropped,
 				});
 			}
 			if (command === "discard") {

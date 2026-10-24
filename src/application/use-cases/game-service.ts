@@ -27,6 +27,7 @@ import {
 	startAction,
 	cancelAction,
 	discardPausedActions,
+	describeAction,
 	buyUpgrade,
 	bankOperation,
 	type BankOperation,
@@ -43,9 +44,22 @@ export type GameContext = {
 	state: GameState;
 	content: GameContent;
 	version: number;
+	// NOTE: set only by cancelAction; transient, not part of the persisted state.
+	droppedPaused?: string[];
 };
 
 export type UseCaseResult<T> = Result<T, DomainError>;
+
+// NOTE: the pause limit silently evicts the oldest paused action; the service
+// turns that eviction into an event, because the domain layer has no log.
+function droppedPausedKeys(before: GameState, after: GameState): string[] {
+	const kept = new Set(after.pausedActions.map(describeAction));
+	const keys = [
+		...(before.activeAction ? [describeAction(before.activeAction)] : []),
+		...before.pausedActions.map(describeAction),
+	];
+	return keys.filter((key) => !kept.has(key));
+}
 
 // NOTE: tick ends a craft loop when its inputs run out; the service turns that
 // transition into an event, because the domain layer does not write to the log.
@@ -187,22 +201,35 @@ export class GameService {
 		const context = await this.loadContext(playerId);
 		if (context.isErr()) return err(context.error);
 		const now = this.clock.now();
-		const result = cancelAction(context.value.state, now);
+		const before = context.value.state;
+		const result = cancelAction(before, now);
 		if (result.isErr()) {
 			await this.logError(playerId, now, result.error);
 			return err(result.error);
 		}
 		const next = { ...context.value, state: result.value };
-		await this.commit(playerId, next, [
+		const dropped = droppedPausedKeys(before, result.value);
+		if (dropped.length > 0) {
+			next.droppedPaused = dropped;
+		}
+		const events: GameEvent[] = [
 			{
 				ts: now,
 				type: "action.cancelled",
 				payload: {
-					target: context.value.state.activeAction?.targetId ?? "",
+					target: before.activeAction?.targetId ?? "",
 					paused: result.value.pausedActions.length,
 				},
 			},
-		]);
+		];
+		if (dropped.length > 0) {
+			events.push({
+				ts: now,
+				type: "action.dropped",
+				payload: { targets: dropped },
+			});
+		}
+		await this.commit(playerId, next, events);
 		return ok(next);
 	}
 
